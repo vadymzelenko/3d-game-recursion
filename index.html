@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  
+  
+  <title>РЕКУРСИЯ: ОБЪЕКТ-1988</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/os.css" />
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="crosshair"></div>
+  <div id="location"></div>
+  <div id="inventory"></div>
+  <div id="prompt"></div>
+  <div id="message"></div>
+  <div id="hint">WASD — движение · E — взаимодействие · Esc — курсор · F — перезапуск</div>
+</div>
+
+<!-- Диалоговое окно -->
+<div id="dialogue" class="hidden">
+  <div id="dialogue-speaker"></div>
+  <div id="dialogue-body"></div>
+</div>
+
+<!-- Открытое письмо/записка -->
+<div id="letter" class="hidden">
+  <div class="letter-paper">
+    <div id="letter-title"></div>
+    <div id="letter-body"></div>
+    <div id="letter-hint">[E] / [Пробел] / [Esc] — закрыть письмо</div>
+  </div>
+</div>
+
+<!-- ИСКРА-ОС -->
+<div id="os" class="hidden">
+  <div id="os-desktop"></div>
+  <div id="os-taskbar">
+    <button id="os-start-btn">ПУСК</button>
+    <div id="os-clock">04:12</div>
+  </div>
+  <div id="os-start-menu" class="hidden"></div>
+</div>
+
+<!-- Стартовый оверлей -->
+<div id="start-screen">
+  <div class="start-box">
+    <h1>РЕКУРСИЯ</h1>
+    <h2>ОБЪЕКТ-1988</h2>
+    <p>Психологический сюрреалистический хоррор</p>
+    <button id="start-btn">НАЧАТЬ</button>
+    <small>Кликните, чтобы захватить мышь</small>
+  </div>
+</div>
+
+<!-- Экран финала -->
+<div id="ending" class="hidden">
+  <pre id="ending-text"></pre>
+</div>
+
+<!-- CRT-эффекты -->
+<div id="crt-overlay"></div>
+<div id="vignette"></div>
+<div id="grain"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
