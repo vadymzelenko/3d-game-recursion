@@ -1,7 +1,8 @@
 // Декор и типовая меблировка.
 
 import * as THREE from "three";
-import { makeBox, makeHitbox, solidBox, glow, makeTextSprite } from "../utils.js";
+import { makeBox, solidBox, glow, makePanel } from "../utils.js";
+import { decal, FONTS } from "./text.js";
 import { Interactable } from "../interactable.js";
 import { COLORS } from "../settings.js";
 
@@ -139,24 +140,62 @@ export function frame(R, x, y, z, face, w, h, art = "landscape", onLook = null) 
     return G;
 }
 
+// Часы всегда показывают 04:12. Это первое правило.
 export function wallClock(R, x, y, z, face, { r = 0.17, time = "04:12" } = {}) {
     const G = wallGroup(R, x, y, z, face);
     makeBox(G, r * 2, r * 2, 0.04, 0, 0, 0.02, 0x2a2622);
-    makeBox(G, r * 1.7, r * 1.7, 0.02, 0, 0, 0.045, 0xd0c8b0);
-    makeBox(G, 0.014, r * 0.7, 0.012, 0, r * 0.3, 0.06, 0x1a1a1a);
-    const h2 = makeBox(G, 0.014, r * 0.5, 0.012, -r * 0.2, -r * 0.05, 0.062, 0x1a1a1a);
-    h2.rotation.z = -1.1;
+    makePanel(G, r * 1.76, r * 1.76, 256, 256, (c, w, h) => {
+        c.fillStyle = "#d6cfb6"; c.fillRect(0, 0, w, h);
+        c.fillStyle = "#1c1a18";
+        c.font = `600 34px ${FONTS.sans}`;
+        c.textAlign = "center"; c.textBaseline = "middle";
+        for (let i = 1; i <= 12; i++) {
+            const a = i / 12 * Math.PI * 2;
+            c.fillText(String(i), w / 2 + Math.sin(a) * w * 0.38, h / 2 - Math.cos(a) * h * 0.38);
+        }
+        c.font = `400 16px ${FONTS.sans}`;
+        c.fillText("СДЕЛАНО В СССР", w / 2, h * 0.68);
+    }).position.z = 0.042;
+    let hh = 4, mm = 12;
+    const m = /^(\d\d):(\d\d)$/.exec(time);
+    if (m) { hh = +m[1]; mm = +m[2]; }
+    const hand = (len, wdt, ang, zz) => {
+        const P = new THREE.Group();
+        P.position.z = zz;
+        P.rotation.z = -ang;
+        G.add(P);
+        makeBox(P, wdt, len, 0.008, 0, len / 2 - 0.02, 0, 0x141414);
+        return P;
+    };
+    hand(r * 0.55, 0.018, ((hh % 12) + mm / 60) / 12 * Math.PI * 2, 0.05);
+    hand(r * 0.78, 0.012, mm / 60 * Math.PI * 2, 0.056);
+    G.userData.secondHand = hand(r * 0.8, 0.004, 0.37, 0.062);
     return G;
 }
 
 export function calendar(R, x, y, z, face) {
     const G = wallGroup(R, x, y, z, face);
-    makeBox(G, 0.26, 0.38, 0.01, 0, 0, 0.005, 0xd8d0b8);
-    makeBox(G, 0.26, 0.1, 0.012, 0, 0.14, 0.006, 0xa82a22);
-    const t = makeTextSprite("1988", { fontSize: 36, color: "#f0e8d0" });
-    t.scale.setScalar(0.3);
-    t.position.set(0, 0.14, 0.014);
-    G.add(t);
+    makePanel(G, 0.26, 0.38, 208, 304, (c, w, h) => {
+        c.fillStyle = "#e2dac2"; c.fillRect(0, 0, w, h);
+        c.fillStyle = "#a82a22"; c.fillRect(0, 0, w, 72);
+        c.fillStyle = "#f0e8d0"; c.textAlign = "center"; c.textBaseline = "middle";
+        c.font = `600 40px ${FONTS.sans}`; c.fillText("1988", w / 2, 30);
+        c.font = `400 18px ${FONTS.sans}`; c.fillText("НОЯБРЬ", w / 2, 58);
+        c.fillStyle = "#2a2622"; c.font = `400 17px ${FONTS.sans}`;
+        // 1 ноября 1988 — вторник
+        for (let d = 1; d <= 30; d++) {
+            const idx = d + 0;
+            const col = idx % 7, row = Math.floor(idx / 7);
+            const cx = 18 + col * 28, cy = 100 + row * 36;
+            c.fillStyle = col >= 5 ? "#a82a22" : "#2a2622";
+            c.fillText(String(d), cx, cy);
+            if (d === 14) {
+                c.strokeStyle = "#a82a22"; c.lineWidth = 3;
+                c.beginPath(); c.ellipse(cx, cy, 14, 12, 0.2, 0, Math.PI * 2); c.stroke();
+            }
+            if (d > 14) { c.strokeStyle = "rgba(40,40,40,0.0)"; }
+        }
+    }).position.z = 0.006;
     return G;
 }
 
@@ -197,12 +236,7 @@ export function wallShelf(R, x, y, z, face, w, items = []) {
     return G;
 }
 
-export function wallLamp(R, x, y, z, face) {
-    const G = wallGroup(R, x, y, z, face);
-    makeBox(G, 0.08, 0.14, 0.04, 0, 0, 0.02, 0x2a2622);
-    glow(makeBox(G, 0.14, 0.2, 0.1, 0, 0.04, 0.09, 0xe8d8a8), 0xf0dca0, 0.9);
-    return G;
-}
+export function wallLamp(R, x, y, z, face) { return sconce(R, x, y, z, face); }
 
 // ----------------------------------------------------------------
 // Напольные предметы
@@ -245,9 +279,12 @@ export function plantPot(R, solids, x, z, { y = 0, s = 1, solid = true } = {}) {
 }
 
 export function floorLamp(R, solids, x, z) {
-    makeBox(R, 0.26, 0.04, 0.26, x, 0.02, z, 0x2a2622);
-    makeBox(R, 0.03, 1.4, 0.03, x, 0.74, z, 0x2a2622);
-    glow(makeBox(R, 0.32, 0.26, 0.32, x, 1.55, z, 0xd8c890), 0xf0dca0, 0.85);
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.04, 16), lampMat("fl-base", () => new THREE.MeshLambertMaterial({ color: 0x2a2622 })));
+    base.position.set(x, 0.02, z); R.add(base);
+    makeBox(R, 0.025, 1.4, 0.025, x, 0.74, z, 0x2a2622);
+    const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.2, 0.28, 18, 1, true),
+        lampMat("fl-shade", () => new THREE.MeshLambertMaterial({ color: 0xe0cc98, emissive: new THREE.Color(0xffd890), emissiveIntensity: 0.55, side: THREE.DoubleSide })));
+    shade.position.set(x, 1.55, z); R.add(shade);
     solids.push({ min: [x - 0.13, 0, z - 0.13], max: [x + 0.13, 1.7, z + 0.13] });
 }
 
@@ -303,11 +340,13 @@ export function bookshelf(R, solids, x, z, w, d, h, back, { books = true } = {})
     const backTh = 0.05;
     const sideTh = 0.05;
 
-    // Задняя стенка (у самой стены)
-    const backOffset = depthLen / 2 - backTh / 2;
+    // Задняя стенка — между боковинами и чуть отступив от стены комнаты:
+    // совпадающие плоскости мерцали (z-fighting), когда игрок шёл мимо.
+    const backOffset = depthLen / 2 - backTh / 2 - 0.02;
+    const backLen = alongLen - 2 * sideTh - 0.004;
     parts.push(alongX
-        ? makeBox(R, alongLen, h, backTh, x, h / 2, z + bz * backOffset, 0x4a3a2a)
-        : makeBox(R, backTh, h, alongLen, x + bx * backOffset, h / 2, z, 0x4a3a2a));
+        ? makeBox(R, backLen, h - 0.004, backTh, x, h / 2, z + bz * backOffset, 0x4a3a2a)
+        : makeBox(R, backTh, h - 0.004, backLen, x + bx * backOffset, h / 2, z, 0x4a3a2a));
 
     // Боковины
     if (alongX) {
@@ -321,14 +360,15 @@ export function bookshelf(R, solids, x, z, w, d, h, back, { books = true } = {})
     // Горизонтальные полки — их не было, поэтому книги "висели в воздухе"
     const shelfCount = 3;
     const shelfSpacing = (h - 0.05) / shelfCount;
-    const planeAlong = alongLen - 0.1;
-    const planeDeep  = depthLen - 0.05;
+    const planeAlong = alongLen - 2 * sideTh - 0.004;
+    const planeDeep  = depthLen - 0.08;
 
     for (let r = 0; r <= shelfCount; r++) {
         const y = 0.02 + r * shelfSpacing;
+        // полка тоже отступает от задней стенки, чтобы торцы не совпадали
         parts.push(alongX
-            ? makeBox(R, planeAlong, 0.03, planeDeep, x, y, z, 0x3a2a1c)
-            : makeBox(R, planeDeep, 0.03, planeAlong, x, y, z, 0x3a2a1c));
+            ? makeBox(R, planeAlong, 0.03, planeDeep, x, y, z - bz * 0.01, 0x3a2a1c)
+            : makeBox(R, planeDeep, 0.03, planeAlong, x - bx * 0.01, y, z, 0x3a2a1c));
     }
 
     // Книги на полках
@@ -340,7 +380,7 @@ export function bookshelf(R, solids, x, z, w, d, h, back, { books = true } = {})
         const bookW = 0.08;
 
         for (let r = 0; r < shelfCount; r++) {
-            const baseY = 0.02 + r * shelfSpacing + 0.015;
+            const baseY = 0.02 + r * shelfSpacing + 0.017;
             const bookH = shelfSpacing - 0.06;
             for (let i = 0; i < n; i++) {
                 // пропуски, чтобы не было монолитного ряда
@@ -375,65 +415,6 @@ export function tvSet(R, solids, x, z, face) {
 }
 
 // ----------------------------------------------------------------
-// Вид «за окном» для соседей
-// ----------------------------------------------------------------
-// Вид «за окном»: настоящие 3D-дома с окнами вместо плоской картинки.
-let _foggyMat = null;
-function foggyMat() {
-    if (_foggyMat) return _foggyMat;
-    const cv = document.createElement("canvas");
-    cv.width = 128; cv.height = 64;
-    const c = cv.getContext("2d");
-    c.fillStyle = "#2a2832"; c.fillRect(0, 0, 128, 64);
-    const tex = new THREE.CanvasTexture(cv);
-    _foggyMat = new THREE.MeshBasicMaterial({ map: tex, fog: false });
-    return _foggyMat;
-}
-
-export function outsideView(R, { x, z, rotY, w, h, sillY }) {
-    const G = new THREE.Group();
-    G.position.set(x, 0, z);
-    G.rotation.y = rotY;
-    R.add(G);
-
-    // Дальний «туман» — плоскость позади домов
-    const fogPlane = flat(G, w + 8, h + 8, 0, sillY + h / 2, 22, foggyMat());
-    fogPlane.rotation.y = Math.PI;
-
-    // 3D-дома. Z-координата — насколько глубоко за окном.
-    const buildingColors = [0x2a2830, 0x33303a, 0x28252e];
-    const winColors = [0xc8a860, 0xd8b870, 0xb89850];
-
-    const buildings = [
-        { x: -3.5, z: 6,  w: 3.0, h: 5.5, d: 3.0 },
-        { x:  1.5, z: 8,  w: 3.5, h: 7.0, d: 3.5 },
-        { x:  5.0, z: 7,  w: 3.0, h: 5.0, d: 3.0 },
-        { x: -6.0, z: 10, w: 4.0, h: 8.0, d: 4.0 },
-        { x:  4.0, z: 12, w: 4.5, h: 9.0, d: 4.5 },
-    ];
-
-    for (const b of buildings) {
-        const color = buildingColors[(Math.random() * buildingColors.length) | 0];
-        makeBox(G, b.w, b.h, b.d, b.x, b.h / 2, b.z, color);
-
-        // Светящиеся окна на «лицевой» стороне (-z)
-        const cols = Math.max(1, Math.floor(b.w / 0.9));
-        const rows = Math.max(1, Math.floor(b.h / 1.1));
-        for (let ry = 0; ry < rows; ry++) {
-            for (let cx2 = 0; cx2 < cols; cx2++) {
-                if (Math.random() > 0.4) continue;   // часть окон тёмная
-                const wx = b.x - b.w / 2 + 0.55 + cx2 * 0.9;
-                const wy = 0.9 + ry * 1.1;
-                if (wx > b.x + b.w / 2 - 0.25) continue;
-                const wc = winColors[(Math.random() * winColors.length) | 0];
-                const wm = makeBox(G, 0.34, 0.48, 0.02, wx, wy, b.z - b.d / 2 - 0.005, wc);
-                glow(wm, wc, 0.85);
-            }
-        }
-    }
-
-    return G;
-}
 // ----------------------------------------------------------------
 // Новые декоративные хелперы
 // ----------------------------------------------------------------
@@ -607,10 +588,7 @@ export function furnishKitchen(R, solids, { hw, cw, hasWindow = true }) {
         makeBox(R, 0.01, 0.02, fD - 0.04, fx - fW / 2 - 0.005, 1.1, fz, 0x707070),
         makeBox(R, 0.04, 0.4, 0.04, fx - fW / 2 - 0.02, 1.45, fz + 0.24, 0x707070),
         makeBox(R, 0.04, 0.4, 0.04, fx - fW / 2 - 0.02, 0.8, fz + 0.24, 0x707070)];
-    const lbl = makeTextSprite("МИНСК", { fontSize: 32, color: "#606060" });
-    lbl.position.set(fx - fW / 2 - 0.013, 1.62, fz);
-    lbl.rotation.y = -Math.PI / 2;
-    R.add(lbl);
+    decal(R, "Минск", { x: fx - fW / 2 - 0.006, y: 1.6, z: fz, face: "w", width: 0.26, style: "label", color: "rgba(150,150,150,0.95)" });
 
     // ── секции гарнитура ──────────────────────────────────────────
     // ВАЖНО: zA0 сдвинут на -0.15, чтобы тумба с мойкой НЕ начиналась
@@ -648,7 +626,6 @@ export function furnishKitchen(R, solids, { hw, cw, hasWindow = true }) {
     // вытяжка — строго над плитой
     makeBox(R, 0.4, 0.14, 0.55, x1 - 0.2, 1.62, stoveZ, 0x9a9a90);
     makeBox(R, 0.14, 1.11, 0.14, x1 - 0.1, 2.245, stoveZ, 0x9a9a90);
-
 
     // Верхний шкафчик — СТОИТ на холодильнике (раньше висел рядом).
     // Холодильник: центр (fx, fz), верх на y = 1.7. Шкафчик — чуть уже и
@@ -706,4 +683,77 @@ export function furnishKitchen(R, solids, { hw, cw, hasWindow = true }) {
     }
 
     return { fridgeParts, stoveParts, kettleParts, fridge };
+}
+// ================================================================
+// Светильники. Каждый источник света в мире — это видимая лампа.
+// ================================================================
+const _lampMats = {};
+function lampMat(key, make) { return _lampMats[key] || (_lampMats[key] = make()); }
+const cordMat  = () => lampMat("cord", () => new THREE.MeshLambertMaterial({ color: 0x1a1816 }));
+const metalMat = () => lampMat("metal", () => new THREE.MeshLambertMaterial({ color: 0x5a5650 }));
+function bulbMat() {
+    return new THREE.MeshLambertMaterial({ color: 0xfff1c8, emissive: new THREE.Color(0xffd890), emissiveIntensity: 1.0 });
+}
+function noPick(m) { m.userData.noPick = true; return m; }
+
+// Подвесной светильник: шнур, патрон, конический абажур, лампа.
+// Возвращает меш лампочки (её яркость можно менять).
+export function pendantLamp(R, x, z, { ceil = 2.8, drop = 0.5, shade = 0x7a5a36, r = 0.22 } = {}) {
+    const by = ceil - drop;
+    noPick(makeBox(R, 0.012, drop - 0.12, 0.012, x, ceil - (drop - 0.12) / 2, z, 0x1a1816));
+    const cap = noPick(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 12), metalMat()));
+    cap.position.set(x, ceil - 0.02, z); R.add(cap);
+    const shadeMat = lampMat("shade" + shade, () => new THREE.MeshLambertMaterial({ color: shade, side: THREE.DoubleSide }));
+    const cone = noPick(new THREE.Mesh(new THREE.CylinderGeometry(0.035, r, 0.2, 20, 1, true), shadeMat));
+    cone.position.set(x, by + 0.06, z); R.add(cone);
+    const socket = noPick(new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.06, 10), cordMat()));
+    socket.position.set(x, by + 0.13, z); R.add(socket);
+    const bulb = noPick(new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 10), bulbMat()));
+    bulb.position.set(x, by + 0.06, z); R.add(bulb);
+    return bulb;
+}
+
+// Голая лампочка на шнуре.
+export function bareBulb(R, x, z, { ceil = 2.8, drop = 0.55 } = {}) {
+    const by = ceil - drop;
+    noPick(makeBox(R, 0.01, drop - 0.06, 0.01, x, ceil - (drop - 0.06) / 2, z, 0x1a1816));
+    const socket = noPick(new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.05, 10), cordMat()));
+    socket.position.set(x, by + 0.07, z); R.add(socket);
+    const bulb = noPick(new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 10), bulbMat()));
+    bulb.position.set(x, by + 0.02, z); R.add(bulb);
+    return bulb;
+}
+
+// Плафон-«тарелка» под потолком подъезда: матовое стекло на жестяном основании.
+export function domeLamp(R, x, y, z, { r = 0.17 } = {}) {
+    const base = noPick(new THREE.Mesh(new THREE.CylinderGeometry(r + 0.03, r + 0.03, 0.03, 20), metalMat()));
+    base.position.set(x, y - 0.015, z); R.add(base);
+    const glass = noPick(new THREE.Mesh(new THREE.SphereGeometry(r, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshLambertMaterial({ color: 0xf4ead0, emissive: new THREE.Color(0xffe0a0), emissiveIntensity: 0.9 })));
+    glass.rotation.x = Math.PI;
+    glass.position.set(x, y - 0.03, z); R.add(glass);
+    return glass;
+}
+
+// Бра на стене: металлическая розетка и стеклянный колпак.
+export function sconce(R, x, y, z, face) {
+    const G = wallGroup(R, x, y, z, face);
+    noPick(makeBox(G, 0.1, 0.14, 0.03, 0, 0, 0.015, 0x3a3630));
+    noPick(makeBox(G, 0.02, 0.02, 0.12, 0, 0, 0.08, 0x5a5650));
+    const glass = noPick(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.14, 14, 1, true),
+        new THREE.MeshLambertMaterial({ color: 0xf0e2c0, emissive: new THREE.Color(0xffd890), emissiveIntensity: 0.8, side: THREE.DoubleSide })));
+    glass.position.set(0, 0.03, 0.15); G.add(glass);
+    return G;
+}
+
+// Расставить светильники и привязать к каждому «якорь» света сцены.
+export function furnishLights(scene, R, list) {
+    for (const l of list) {
+        if (l.kind === "none") continue;
+        let y;
+        if (l.kind === "dome") { domeLamp(R, l.x, 2.8, l.z, { r: 0.14 }); y = 2.6; }
+        else if (l.kind === "bulb") { bareBulb(R, l.x, l.z); y = 2.25; }
+        else { pendantLamp(R, l.x, l.z, { shade: l.shade ?? 0x7a5a36 }); y = 2.12; }
+        scene.light(l.x, y, l.z, { intensity: l.intensity, distance: l.distance, color: l.color, flicker: l.flicker || 0 });
+    }
 }

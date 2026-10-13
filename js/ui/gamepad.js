@@ -20,7 +20,7 @@ export class GamepadInput {
 
         window.addEventListener("gamepadconnected", (e) => {
             console.log("[gamepad] connected:", e.gamepad.id);
-            this.game.hud?.showMessage(`Геймпад подключён: ${e.gamepad.id}`, 3500);
+            this.game.hud?.toast("Геймпад", "подключён", "item");
         });
         window.addEventListener("gamepaddisconnected", () => {
             this.pad = null;

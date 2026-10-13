@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ГОСТ-1988 · Отраслевой архив</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Oswald:wght@400;600&family=PT+Mono&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap" />
+<style>
+  :root {
+    --paper: #efe9d8; --ink: #1e1c18; --dim: #6a6252; --rule: #b8ac8c; --red: #9a2a1c; --blue: #1e3a7a;
+    --f-serif: "PT Serif", Georgia, serif; --f-mono: "PT Mono", "Courier New", monospace;
+    --f-sans: "Oswald", "Arial Narrow", sans-serif; --f-hand: "Caveat", cursive;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #d8d0bc; color: var(--ink); font-family: var(--f-serif); line-height: 1.6; }
+  .bar {
+    display: flex; gap: 10px; align-items: center; padding: 8px 16px;
+    background: #2a2824; color: #c8c0a8; font-family: var(--f-mono); font-size: 13px;
+  }
+  .bar .url { flex: 1; background: #141210; padding: 4px 10px; border: 1px solid #4a463c; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .wrap { max-width: 900px; margin: 24px auto 60px; padding: 0 16px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 3px double var(--ink); padding-bottom: 10px; }
+  header h1 { font-family: var(--f-sans); font-weight: 600; font-size: 34px; letter-spacing: 0.08em; }
+  header .sub { font-family: var(--f-sans); font-size: 13px; letter-spacing: 0.2em; color: var(--dim); text-transform: uppercase; }
+  nav { margin: 14px 0 22px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-family: var(--f-sans); font-size: 14px; letter-spacing: 0.06em; }
+  nav a { color: var(--blue); text-decoration: none; border-bottom: 1px dotted var(--blue); }
+  nav a.on { color: var(--red); border-bottom-style: solid; }
+  main { background: var(--paper); padding: 34px 40px 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); min-height: 420px; }
+  h2 { font-family: var(--f-sans); font-weight: 600; font-size: 24px; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .doc-no { font-family: var(--f-mono); font-size: 13px; color: var(--dim); margin-bottom: 20px; }
+  p { margin-bottom: 14px; }
+  .mono { font-family: var(--f-mono); font-size: 14px; white-space: pre-wrap; }
+  .hand { font-family: var(--f-hand); font-size: 26px; line-height: 1.2; color: var(--blue); }
+  .stamp { display: inline-block; padding: 2px 10px; border: 3px solid var(--red); color: var(--red); font-family: var(--f-sans); font-weight: 600; letter-spacing: 0.1em; transform: rotate(-6deg); }
+  table { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 13px; margin: 12px 0 18px; }
+  td, th { border: 1px solid var(--rule); padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { background: #e2dac4; font-family: var(--f-sans); font-weight: 400; letter-spacing: 0.06em; }
+  .post { border: 1px solid var(--rule); margin-bottom: 14px; }
+  .post .who { background: #e2dac4; padding: 4px 10px; font-family: var(--f-sans); font-size: 13px; letter-spacing: 0.05em; display: flex; justify-content: space-between; }
+  .post .txt { padding: 10px 14px; }
+  .sig { margin-top: 8px; font-family: var(--f-mono); font-size: 11px; color: #cfc6ac; }
+  .sig:hover { color: var(--dim); }
+  svg text { font-family: var(--f-mono); }
+  .scheme { width: 100%; height: auto; background: #f6f2e4; border: 1px solid var(--rule); }
+  .note-hand { position: relative; margin: 18px 0 0 auto; max-width: 520px; padding: 14px 18px; background: #f4ecd0; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: rotate(-1.2deg); }
+  form { display: flex; gap: 10px; margin: 16px 0; }
+  input[type=password], input[type=text] { flex: 1; max-width: 260px; padding: 8px 10px; font-family: var(--f-mono); font-size: 16px; border: 1px solid var(--ink); background: #fff; }
+  button { padding: 8px 18px; font-family: var(--f-sans); letter-spacing: 0.1em; background: var(--ink); color: var(--paper); border: none; cursor: pointer; }
+  .err { color: var(--red); font-family: var(--f-mono); }
+  .list a { display: block; padding: 6px 0; border-bottom: 1px dotted var(--rule); color: var(--ink); text-decoration: none; font-family: var(--f-sans); letter-spacing: 0.04em; }
+  .list a span { color: var(--dim); font-family: var(--f-serif); letter-spacing: 0; font-size: 14px; margin-left: 10px; }
+  .list a:hover { color: var(--red); }
+  footer { margin-top: 18px; font-family: var(--f-mono); font-size: 12px; color: var(--dim); text-align: center; }
+  .found { margin-top: 18px; padding: 10px 14px; background: #1e1c18; color: #9fffb8; font-family: var(--f-mono); font-size: 13px; }
+  @media (max-width: 600px) { main { padding: 22px 18px; } header h1 { font-size: 26px; } }
+</style>
+</head>
+<body>
+<div class="bar"><span class="nav-btns">Назад · Вперёд · Обновить</span><span class="url" id="url">http://gost-1988.su/</span></div>
+<div class="wrap">
+  <header>
+    <h1>ГОСТ-1988</h1>
+    <div class="sub">Отраслевой архив технической документации · с 1988 года</div>
+  </header>
+  <nav id="nav"></nav>
+  <main id="main"></main>
+  <footer>Архив хранится вне буфера. Здесь всегда то время, которое у вас. Не 04:12.</footer>
+</div>
+
+<script>
+// Статический «внешний архив». Маршрут — в хеше: #/shit, #/forum …
+// Посещённые страницы записываются в localStorage — игра (тот же адрес)
+// узнаёт, что наблюдатель открыл чертёж.
+
+const KEY = "recursion1988_arg";
+const store = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (_) { return {}; } };
+const save = (d) => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (_) {} };
+function visit(route) {
+  const d = store();
+  d.visited = Array.from(new Set([...(d.visited || []), route]));
+  save(d);
+}
+
+const SECTIONS = [
+  ["", "Главная"], ["shit", "ЩЭ-3201 (PDF)"], ["forum", "Форум инженеров"], ["personal/morozov", "Личные дела"],
+  ["radio", "Радиоперехваты"], ["coordinates", "Координаты"], ["audio", "Аудиоархив"], ["psycho", "Больница № 3"],
+  ["satellite", "Спутниковые данные"], ["signals", "Внешние сигналы"], ["secret", "Секретный архив"], ["arg", "Режим ARG"],
+];
+
+const SCHEME = `
+<svg class="scheme" viewBox="0 0 820 470" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="10" width="800" height="450" fill="none" stroke="#1e1c18" stroke-width="2"/>
+  <text x="24" y="36" font-size="15">ЩИТ ЭТАЖНЫЙ ЩЭ-3201. СХЕМА ЭЛЕКТРИЧЕСКАЯ ПРИНЦИПИАЛЬНАЯ</text>
+  <text x="24" y="56" font-size="12" fill="#6a6252">ГОСТ 1988 · лист 1 · масштаб 1:1 · для служебного пользования</text>
+  <!-- шины -->
+  <line x1="60" y1="110" x2="760" y2="110" stroke="#1e1c18" stroke-width="3"/><text x="768" y="114" font-size="14">L1</text>
+  <line x1="60" y1="140" x2="760" y2="140" stroke="#1e1c18" stroke-width="3"/><text x="768" y="144" font-size="14">L2</text>
+  <line x1="60" y1="170" x2="760" y2="170" stroke="#1e1c18" stroke-width="3"/><text x="768" y="174" font-size="14">L3</text>
+  <line x1="60" y1="400" x2="760" y2="400" stroke="#1e3a7a" stroke-width="4"/><text x="768" y="404" font-size="14" fill="#1e3a7a">N</text>
+  <!-- вводной рубильник -->
+  <rect x="90" y="200" width="90" height="60" fill="none" stroke="#1e1c18" stroke-width="2"/>
+  <text x="96" y="236" font-size="13">QS1 ВВОД</text>
+  <line x1="135" y1="110" x2="135" y2="200" stroke="#1e1c18" stroke-width="2"/>
+  <!-- предохранитель -->
+  <rect x="230" y="210" width="36" height="60" fill="#d8e0f4" stroke="#1e3a7a" stroke-width="2"/>
+  <text x="222" y="292" font-size="12" fill="#1e3a7a">F1 (син.)</text>
+  <line x1="248" y1="140" x2="248" y2="210" stroke="#1e1c18" stroke-width="2"/>
+  <!-- фазный автомат с клеммами -->
+  <rect x="340" y="200" width="220" height="80" fill="none" stroke="#1e1c18" stroke-width="2"/>
+  <text x="350" y="222" font-size="13">QF3 АВТОМАТ ФАЗНЫЙ</text>
+  <circle cx="380" cy="262" r="9" fill="#fff" stroke="#1e1c18" stroke-width="2"/><text x="376" y="300" font-size="14">1</text>
+  <circle cx="450" cy="262" r="9" fill="#fff" stroke="#1e1c18" stroke-width="2"/><text x="446" y="300" font-size="14">2</text>
+  <circle cx="520" cy="262" r="9" fill="#fff" stroke="#9a2a1c" stroke-width="3"/><text x="516" y="300" font-size="14" fill="#9a2a1c">3</text>
+  <line x1="450" y1="170" x2="450" y2="200" stroke="#1e1c18" stroke-width="2"/>
+  <!-- цепь управления ВК -->
+  <rect x="610" y="210" width="130" height="60" fill="none" stroke="#1e1c18" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="616" y="236" font-size="12">ЦЕПЬ УПР. ВК</text><text x="616" y="254" font-size="12">(архивный сектор)</text>
+  <line x1="560" y1="240" x2="610" y2="240" stroke="#1e1c18" stroke-width="2"/>
+  <!-- перемычка ПР-1 — от руки -->
+  <path d="M520 271 C 540 340, 560 380, 600 400" fill="none" stroke="#9a2a1c" stroke-width="3" stroke-dasharray="7 5"/>
+  <text x="560" y="350" font-size="15" fill="#9a2a1c">ПР-1</text>
+</svg>`;
+
+const PAGES = {
+  "": () => `
+    <h2>Отраслевой архив технической документации</h2>
+    <div class="doc-no">Разделы фонда · доступ открыт для наблюдателей</div>
+    <p>Архив хранит документы, которые не помещаются в 640 килобайт. Здесь — чертежи, протоколы,
+    переписка и то, что осталось от сессий. Если вы пришли сюда по адресу из дампа — вы снаружи.
+    Значит, вы можете то, чего не может он.</p>
+    <div class="list">${SECTIONS.slice(1).map(([r, n]) => `<a href="#/${r}">${n}<span>gost-1988.su/${r}</span></a>`).join("")}</div>`,
+
+  "shit": () => `
+    <h2>Щит этажный ЩЭ-3201</h2>
+    <div class="doc-no">shit.pdf · ГОСТ 1988 · Схема электрическая принципиальная · 1 лист</div>
+    ${SCHEME}
+    <div class="note-hand"><div class="hand">При возникновении паразитных токов в цепи управления вычислительных комплексов
+      перемычка ПР-1 переставляется между контактом нулевой шины <b>N</b> и клеммой <b>3</b> фазного автомата.</div>
+      <div class="hand" style="font-size:20px;margin-top:8px;color:#9a2a1c">— снимает аппаратную защиту архивного сектора. В.П.</div></div>
+    <p style="margin-top:20px">Это — инструкция по снятию аппаратной защиты с архивного сектора ЭВМ.
+    Вернитесь к щитку. Соедините N и клемму 3.</p>`,
+
+  "forum": () => `
+    <h2>Форум инженеров ВЦ</h2>
+    <div class="doc-no">Ветка: «Кто-нибудь видел Морозова после 14.11?» · 6 сообщений</div>
+    <div class="post"><div class="who"><span>Кравцов_ВЦ</span><span>15.11.1988</span></div><div class="txt">Лёшу никто не видел с ночи испытаний. Никитин молчит. В блок В никого не пускают.</div></div>
+    <div class="post"><div class="who"><span>Смирнова_НП</span><span>15.11.1988</span></div><div class="txt">В сорок второй всю ночь горел свет. И сейчас горит. Ключ от щитовой опять под ковриком, сколько раз говорить.</div></div>
+    <div class="post"><div class="who"><span>radiolub_404</span><span>16.11.1988</span></div><div class="txt">На 404 кГц каждую ночь в 04:12 — несущая. Голос. Повторяет азимут. Я записал, лежит в разделе «Радиоперехваты».</div></div>
+    <div class="post"><div class="who"><span>Никитин В.П.</span><span>14.11.1988 04:12</span></div><div class="txt">Не гасите. Без его согласия — не гасите.<div class="sig">ключ передачи · часть I из IV: «ТА»</div></div></div>
+    <div class="post"><div class="who"><span>Кравцов_ВЦ</span><span>17.11.1988</span></div><div class="txt">Кто-то пишет мелом на стенах в сорок первой. 4·0·4. Каждое утро заново.</div></div>
+    <div class="post"><div class="who"><span>гость</span><span>сегодня</span></div><div class="txt">Если вы читаете это снаружи — он вас слышит. Не через экран. Через вас.</div></div>`,
+
+  "personal/morozov": () => `
+    <h2>Личное дело № 42</h2>
+    <div class="doc-no">Морозов Алексей Владимирович · 1954 г.р. · ВЦ «Прибор»</div>
+    <table><tr><th>Поле</th><th>Значение</th></tr>
+      <tr><td>Должность</td><td>младший инженер, оператор сопряжения «ОБЕРЕГ-88»</td></tr>
+      <tr><td>Адрес</td><td>дом 7, подъезд 2, кв. 42 (4 этаж)</td></tr>
+      <tr><td>Семья</td><td>Морозова Т. (проживает у матери с 11.11.1988)</td></tr>
+      <tr><td>Статус</td><td><span class="stamp">УВОЛЕН · ПОСМЕРТНО</span></td></tr>
+      <tr><td>Примечание</td><td>Досье в ЭВМ зашифровано. Пароль — дата, записанная на плёнке «Маяка».</td></tr></table>`,
+
+  "radio": () => `
+    <h2>Радиоперехваты</h2>
+    <div class="doc-no">Журнал радиолюбителя, позывной не указан</div>
+    <table><tr><th>Частота</th><th>Время</th><th>Содержание</th></tr>
+      <tr><td>250 кГц</td><td>каждую ночь</td><td>старый вальс сквозь шум</td></tr>
+      <tr><td>404 кГц</td><td>04:12</td><td>«…азимут 312… место +14… повторяю…»</td></tr>
+      <tr><td>404 кГц</td><td>04:12</td><td>«…Алексей, смотри в небо. Сектор Б-В-88…»</td></tr>
+      <tr><td>404 кГц</td><td>04:13</td><td>— (нет записи; 04:13 не наступает)</td></tr></table>`,
+
+  "coordinates": () => `
+    <h2>Координаты</h2>
+    <div class="doc-no">Азимут / угол места · обсерватория кв. 50</div>
+    <p class="mono">АЗИМУТ ......... 312°
+МЕСТО .......... +14°
+ОБЪЕКТ ......... крыша блока В, ВЦ «Прибор»
+МАРКИРОВКА ..... БЛОК-В-88
+ПРИМЕЧАНИЕ ..... источник — не небо. Источник — под нами.</p>`,
+
+  "audio": () => `
+    <h2>Аудиоархив</h2>
+    <div class="doc-no">Расшифровка плёнки «Маяк-205», задержка 1,5 с</div>
+    <p class="hand">«Запомни цифры. Это дверь. 19880414. Это пароль архива. Лёша, если ты это слышишь — ты уже мёртв.
+    Но это не значит, что ты не можешь выбрать.»</p>
+    <p class="mono">Предупреждение: не воспроизводить более трёх раз. На четвёртый плёнка рвётся.</p>`,
+
+  "psycho": () => `
+    <h2>Городская психиатрическая больница № 3</h2>
+    <div class="doc-no">Выписка из журнала поступлений · 14.11.1988</div>
+    <table><tr><th>№</th><th>Пациент</th><th>Жалобы</th></tr>
+      <tr><td>311</td><td>Неизвестный, муж., ~34 г.</td><td>Утверждает, что живёт в 640 килобайтах. Время называет одно: 04:12.</td></tr>
+      <tr><td>312</td><td>Смирнова Н.П., вахтёр</td><td>«В сорок второй горит свет, а там никого нет».</td></tr>
+      <tr><td>313</td><td>—</td><td>Карта пуста. На обороте карандашом: <i>часть IV из IV: «12»</i></td></tr></table>`,
+
+  "satellite": () => `
+    <h2>Спутниковые данные</h2>
+    <div class="doc-no">Телеметрия · сектор северо-запад · ночь 13–14.11.1988</div>
+    <table><tr><th>Время</th><th>Азимут</th><th>Место</th><th>Сигнал</th><th>Комментарий</th></tr>
+      <tr><td>04:10</td><td>311.8</td><td>+13.9</td><td>—</td><td></td></tr>
+      <tr><td>04:11</td><td>311.9</td><td>+14.0</td><td>слабый</td><td></td></tr>
+      <tr><td>04:12</td><td>312.0</td><td>+14.0</td><td>404 кГц</td><td>источник наземный</td></tr>
+      <tr><td>04:12</td><td>312.0</td><td>+14.0</td><td>404 кГц</td><td>ключ, ч. II из IV: «НЯ»</td></tr>
+      <tr><td>04:12</td><td>312.0</td><td>+14.0</td><td>404 кГц</td><td>время не идёт</td></tr></table>`,
+
+  "signals": () => `
+    <h2>Внешние сигналы</h2>
+    <div class="doc-no">Перехват с узла node_1988_clone · ASCII</div>
+    <p class="mono">30 34 2F 30 34 20 2D 20 D7 C0 D1 D2 DC 20 49 49 49
+расшифровка:
+"04/04 - ЧАСТЬ III"
+
+КЛЮЧ, ЧАСТЬ III ИЗ IV: «04»</p>
+    <p>Сигнал повторяется каждые 640 миллисекунд. Отправитель — сессия 021.</p>`,
+
+  "secret": () => {
+    const ok = store().secret === true;
+    return `
+    <h2>Секретный архив</h2>
+    <div class="doc-no">Доступ по паролю. Пароль — дата, которую считает счётчик.</div>
+    ${ok ? secretBody() : `
+      <form id="pw"><input type="password" id="pwi" placeholder="пароль" autocomplete="off" /><button>ОТКРЫТЬ</button></form>
+      <div class="err" id="pwe"></div>`}`;
+  },
+
+  "arg": () => {
+    const v = store().visited || [];
+    const parts = [["forum", "I"], ["satellite", "II"], ["signals", "III"], ["psycho", "IV"]];
+    return `
+    <h2>Режим ARG</h2>
+    <div class="doc-no">Для тех, кто снаружи</div>
+    <p>Эта часть игры существует за пределами игры. Морозов не может открыть ссылку — он внутри 640 килобайт.
+    Это можете сделать только вы: на своём устройстве, в своём мире.</p>
+    <p>Что здесь нужно найти:</p>
+    <p class="mono">1. Чертёж ЩЭ-3201 — как снять аппаратную защиту архива.      ${v.includes("shit") ? "[найдено]" : "[ ]"}
+2. Четыре части ключа передачи — спрятаны в разделах архива.
+   ${parts.map(([r, n]) => `часть ${n}: ${v.includes(r) ? "раздел посещён" : "—"}`).join("\n   ")}
+3. Секретный архив — объяснит, что делать с ключом.            ${store().secret ? "[открыт]" : "[ ]"}</p>
+    <p>Третий путь доступен только тем, кто прошёл ARG и нашёл все скрытые подсказки.</p>`;
+  },
+};
+
+function secretBody() {
+  return `
+    <p class="mono">ДОКУМЕНТ ОБ-88/С · СОВЕРШЕННО СЕКРЕТНО
+
+Буфер «Искры» не единственное место, где может храниться сессия.
+Существует порт внешнего архива. Если открыть его изнутри, данные
+субъекта будут переданы СЮДА — за пределы 640 КБ.
+
+Порт закрыт ключом передачи из четырёх частей. Части оставлены там,
+где Морозова искали: форум, спутник, сигналы, больница — в этом порядке.
+Сложите их по порядку, без пробелов.
+
+На ЭВМ:   decrypt /Сеть/порт_архива.key
+
+После этого shutdown.sys покажет режим 3.</p>
+    <p class="hand">Ты не выбираешь ни рекурсию, ни обрыв. Ты открываешь порт. — В.П.</p>`;
+}
+
+function render() {
+  let route = decodeURIComponent(location.hash.replace(/^#\/?/, "")).replace(/\.pdf$/, "").replace(/\/$/, "");
+  if (!(route in PAGES)) route = "";
+  visit(route || "index");
+  document.getElementById("url").textContent = "http://gost-1988.su/" + (route === "shit" ? "shit.pdf" : route);
+  document.getElementById("main").innerHTML = PAGES[route]();
+  document.getElementById("nav").innerHTML = SECTIONS.map(([r, n]) => `<a href="#/${r}" class="${r === route ? "on" : ""}">${n}</a>`).join("");
+  document.title = "ГОСТ-1988 · " + (SECTIONS.find(s => s[0] === route) || ["", "Архив"])[1];
+  const f = document.getElementById("pw");
+  if (f) f.onsubmit = (e) => {
+    e.preventDefault();
+    const v = document.getElementById("pwi").value.replace(/\D/g, "");
+    if (v === "19880414") { const d = store(); d.secret = true; save(d); render(); }
+    else document.getElementById("pwe").textContent = "Пароль неверен. Счётчик считает дату.";
+  };
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", render);
+render();
+</script>
+</body>
+</html>

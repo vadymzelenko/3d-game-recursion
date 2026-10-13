@@ -18,12 +18,12 @@ export class Player {
     this.height = SETTINGS.PLAYER_HEIGHT;
 
 
-      this.keys = {};
-      this._stepTimer = 0;
-      // Аналоговый ввод (тач-джойстик, стик геймпада). Диапазон [-1..1],
-      // складывается с клавиатурой и обрезается по длине.
-      this.analogX = 0;
-      this.analogZ = 0;
+    this._stepTimer = 0;
+    this.sensitivity = 1;
+    // Аналоговый ввод (тач-джойстик, стик геймпада). Диапазон [-1..1],
+    // складывается с клавиатурой и обрезается по длине.
+    this.analogX = 0;
+    this.analogZ = 0;
   }
 
   setPosition(x, y, z) {
@@ -32,30 +32,28 @@ export class Player {
     this.grounded = false;
   }
 
+  update(dt, camera, solids, keys) {
+    // Ни бега, ни прыжков: Морозов идёт шагом.
+    const speed = SETTINGS.PLAYER_SPEED;
+    let mx = 0, mz = 0;
+    if (keys["KeyW"] || keys["ArrowUp"]) mz -= 1;
+    if (keys["KeyS"] || keys["ArrowDown"]) mz += 1;
+    if (keys["KeyA"] || keys["ArrowLeft"]) mx -= 1;
+    if (keys["KeyD"] || keys["ArrowRight"]) mx += 1;
 
-    update(dt, camera, solids) {
-        const speed = SETTINGS.PLAYER_SPEED;
-        let mx = 0, mz = 0;
-        if (this.keys["KeyW"]) mz -= 1;
-        if (this.keys["KeyS"]) mz += 1;
-        if (this.keys["KeyA"]) mx -= 1;
-        if (this.keys["KeyD"]) mx += 1;
+    // Аналоговый ввод от тача/геймпада складывается с клавиатурой.
+    mx += this.analogX;
+    mz += this.analogZ;
 
-        // Аналоговый ввод от тача/геймпада: сохраняем величину отклонения,
-        // чтобы можно было идти медленно.
-        mx += this.analogX;
-        mz += this.analogZ;
+    // Обрезаем длину до 1, но не нормализуем — иначе теряется аналоговость.
+    const inLen = Math.hypot(mx, mz);
+    if (inLen > 1) { mx /= inLen; mz /= inLen; }
 
-        // Обрезаем длину до 1, но НЕ нормализуем (иначе теряется аналоговость).
-        const inLen = Math.hypot(mx, mz);
-        if (inLen > 1) { mx /= inLen; mz /= inLen; }
-        const moveLen = Math.min(inLen, 1);
-
-        if (inLen > 0.05) {
-            const cos = Math.cos(this.yaw);
-            const sin = Math.sin(this.yaw);
-            const dx = (mx * cos + mz * sin) * speed * dt;
-            const dz = (mx * -sin + mz * cos) * speed * dt;
+    if (inLen > 0.05) {
+      const cos = Math.cos(this.yaw);
+      const sin = Math.sin(this.yaw);
+      const dx = (mx * cos + mz * sin) * speed * dt;
+      const dz = (mx * -sin + mz * cos) * speed * dt;
 
       if (Math.abs(dx) > 1e-5) this._tryMoveAxis("x", this.position.x + dx, solids);
       if (Math.abs(dz) > 1e-5) this._tryMoveAxis("z", this.position.z + dz, solids);
@@ -64,14 +62,9 @@ export class Player {
         this._stepTimer -= dt;
         if (this._stepTimer <= 0) {
           this.game.audio.play("step");
-          this._stepTimer = 0.45;
+          this._stepTimer = 0.5;
         }
       }
-    }
-
-    if (this.keys["Space"] && this.grounded) {
-      this.velocityY = SETTINGS.JUMP_SPEED;
-      this.grounded = false;
     }
 
     if (!this.grounded) {
@@ -100,10 +93,15 @@ export class Player {
       }
     }
 
+    this.applyCamera(camera);
+  }
+
+  applyCamera(camera) {
     camera.position.copy(this.position);
     camera.rotation.order = "YXZ";
     camera.rotation.y = this.yaw;
     camera.rotation.x = this.pitch;
+    camera.rotation.z = this.roll || 0;
   }
 
   _tryMoveAxis(axis, value, solids) {
@@ -180,24 +178,21 @@ export class Player {
   }
 
   onMouseMove(dx, dy) {
-    this.yaw -= dx * SETTINGS.MOUSE_SENSITIVITY;
-    this.pitch -= dy * SETTINGS.MOUSE_SENSITIVITY;
+    const k = SETTINGS.MOUSE_SENSITIVITY * this.sensitivity;
+    this.yaw -= dx * k;
+    this.pitch -= dy * k;
     const lim = Math.PI / 2 - 0.01;
     if (this.pitch > lim) this.pitch = lim;
     if (this.pitch < -lim) this.pitch = -lim;
-
-      // Прямой поворот на радианы (для геймпада и для явных источников).
-      
-    
   }
 
-    lookByRadians(yawDelta, pitchDelta) {
-        this.yaw += yawDelta;
-        this.pitch += pitchDelta;
-        const lim = Math.PI / 2 - 0.01;
-        if (this.pitch > lim) this.pitch = lim;
-        if (this.pitch < -lim) this.pitch = -lim;
-    }
-  
-  
+  // Прямой поворот на радианы (для геймпада).
+
+  lookByRadians(yawDelta, pitchDelta) {
+    this.yaw += yawDelta;
+    this.pitch += pitchDelta;
+    const lim = Math.PI / 2 - 0.01;
+    if (this.pitch > lim) this.pitch = lim;
+    if (this.pitch < -lim) this.pitch = -lim;
+  }
 }

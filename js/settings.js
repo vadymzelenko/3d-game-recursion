@@ -1,19 +1,13 @@
 // Глобальные константы игры.
 
 export const SETTINGS = {
-  WINDOW_TITLE: "РЕКУРСИЯ: ОБЪЕКТ-1988",
-
-  PLAYER_SPEED: 3.2,
+  PLAYER_SPEED: 2.6,
   PLAYER_HEIGHT: 1.7,
   PLAYER_RADIUS: 0.35,
   MOUSE_SENSITIVITY: 0.0025,
-  INTERACT_DISTANCE: 3.5,
+  INTERACT_DISTANCE: 3.0,
 
   GRAVITY: 18.0,
-  JUMP_SPEED: 5.0,
-
-  TOTAL_LOOPS_FOR_ENDING: 3,
-  NOTES_REQUIRED_FOR_PATH: 2,
 };
 
 export const COLORS = {
