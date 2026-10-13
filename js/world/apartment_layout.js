@@ -5,7 +5,6 @@ import * as THREE from "three";
 import { makeBox, aabb } from "../utils.js";
 import { Interactable } from "../interactable.js";
 import { COLORS } from "../settings.js";
-import { plate } from "./text.js";
 
 export const WALL_H = 2.8;
 export const WALL_T = 0.2;
@@ -206,9 +205,7 @@ export class EntryDoor {
         // глазок
         this.peephole = makeBox(pivot, 0.035, 0.035, 0.1, leafW / 2, y0 + 1.60, 0, 0x202020);
         parts.push(this.peephole);
-        if (label) {
-            plate(pivot, label, { x: leafW / 2, y: y0 + 1.83, z: -0.052, face: "s", w: 0.16, h: 0.11, bg: "#2b2b2b", fg: "#d8cfa8", border: "#8a7a50" });
-        }
+        // Номер квартиры — на эмалевой табличке над дверью (см. hallway.js).
 
         // Порог: щель между полом квартиры и подъезда.
         const threshold = makeBox(R, doorW + 0.9, FLOOR_T, 0.7, 0, -FLOOR_T / 2 + 0.008, entryZ, 0x3a3028);

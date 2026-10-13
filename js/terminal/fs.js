@@ -25,7 +25,7 @@ function buildTree() {
       "дневник_снов.txt": F(T.dream),
       "витки.log": F(s => {
         const out = ["ЖУРНАЛ ВИТКОВ (ведётся автоматически)", ""];
-        for (let i = 1; i <= Math.min(s.loop, 40); i++) out.push(`виток ${String(i).padStart(3, "0")}  14.11.1988 04:12  выход на пятый`);
+        for (let i = 1; i <= Math.min(s.loop, 40); i++) out.push(`виток ${String(i).padStart(3, "0")}  14.11.1988 04:12  снова четвёртый этаж`);
         if (!s.loop) out.push("пусто. ты ещё не спускался.");
         if (s.deaths) out.push("", `пробуждений после обрыва: ${s.deaths}`);
         return out.join("\n");

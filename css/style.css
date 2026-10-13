@@ -98,10 +98,12 @@ html, body {
 }
 #caption .cap-text {
   display: inline-block;
-  padding: 10px 20px 12px;
+  padding: 9px 22px 11px;
   font-size: 20px; line-height: 1.45;
   color: var(--ink);
-  background: linear-gradient(90deg, transparent, rgba(8, 7, 6, 0.62) 12%, rgba(8, 7, 6, 0.62) 88%, transparent);
+  background: rgba(10, 9, 8, 0.66);
+  border-top: 1px solid rgba(228, 220, 196, 0.12);
+  border-radius: 2px;
   text-shadow: 0 1px 3px #000;
 }
 #caption.thought .cap-text { font-style: italic; }
@@ -109,22 +111,45 @@ html, body {
 #caption.system .cap-text { font-family: var(--f-mono); font-size: 16px; color: var(--phosphor); }
 
 #toasts {
-  position: absolute; top: 18px; right: 22px;
-  display: flex; flex-direction: column; gap: 8px; align-items: flex-end;
+  position: absolute; top: 22px; right: 26px;
+  display: flex; flex-direction: column; gap: 12px; align-items: flex-end;
 }
+/* Предмет — бумажная бирка на шнурке; запись — полоска тетрадного листа. */
 .toast {
-  min-width: 220px; max-width: 320px;
-  padding: 9px 14px 10px;
-  background: rgba(14, 12, 10, 0.82);
-  border-left: 3px solid var(--amber);
-  transform: translateX(30px); opacity: 0;
-  transition: transform 0.45s, opacity 0.45s;
+  position: relative;
+  min-width: 230px; max-width: 320px;
+  padding: 10px 18px 11px 34px;
+  color: #241e16;
+  background: linear-gradient(#ebe2c8, #ddd1b0);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), inset 0 0 18px rgba(120, 90, 40, 0.18);
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 14px 100%, 0 50%);
+  transform: translate(24px, -6px) rotate(1.5deg); opacity: 0;
+  transition: transform 0.5s cubic-bezier(.2,.9,.3,1.2), opacity 0.4s;
 }
-.toast.show { transform: none; opacity: 1; }
-.toast.clue { border-left-color: var(--rust); }
-.toast-title { font-family: var(--f-sans); font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-dim); }
-.toast-text { font-size: 16px; margin-top: 2px; }
-.toast.clue .toast-text { font-family: var(--f-hand); font-size: 22px; line-height: 1.1; }
+.toast::before {   /* дырочка под шнурок */
+  content: ""; position: absolute; left: 14px; top: 50%; width: 8px; height: 8px; margin-top: -4px;
+  border-radius: 50%; background: #1a1612; box-shadow: inset 0 0 0 2px #8a7a5a;
+}
+.toast.show { transform: rotate(-0.8deg); opacity: 1; }
+.toast-title {
+  font-family: var(--f-sans); font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: #7a6a4a; border-bottom: 1px solid rgba(122, 106, 74, 0.35); padding-bottom: 3px; margin-bottom: 3px;
+}
+.toast-text { font-family: var(--f-serif); font-weight: 700; font-size: 16px; line-height: 1.3; }
+.toast.clue {
+  padding: 8px 18px 10px 30px;
+  clip-path: polygon(0 3px, 6% 0, 14% 4px, 24% 1px, 37% 4px, 50% 0, 63% 3px, 76% 0, 88% 4px, 100% 1px, 100% 100%, 0 100%);
+  background:
+    linear-gradient(90deg, transparent 20px, rgba(190, 60, 50, 0.45) 21px, transparent 22px),
+    repeating-linear-gradient(transparent 0 23px, rgba(70, 110, 160, 0.28) 23px 24px),
+    #efe7cf;
+  background-position: 0 6px;
+  transform: translate(24px, -6px) rotate(-1.5deg);
+}
+.toast.clue::before { display: none; }
+.toast.clue.show { transform: rotate(0.6deg); }
+.toast.clue .toast-title { color: #8a3a24; border-bottom: none; margin-bottom: 0; }
+.toast.clue .toast-text { font-family: var(--f-hand); font-weight: 600; font-size: 24px; line-height: 24px; color: #1e2a48; }
 
 #click-hint {
   position: absolute; left: 50%; top: 58%;

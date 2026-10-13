@@ -9,7 +9,7 @@ import { COLORS } from "../settings.js";
 import { buildApartmentShell, EntryDoor, buildEntryCasing, buildWindowFrame } from "./apartment_layout.js";
 import {
   furnishHall, furnishCorridor, furnishBath, furnishKitchen, rug, frame, curtains, radiator, plantPot,
-  floorLamp, bookshelf, chair, vase, calendar, pictureWall, plantCorner, outsideView, wallClock,
+  floorLamp, bookshelf, chair, vase, calendar, pictureWall, plantCorner, outsideView, wallClock, furnishLights,
 } from "./decor.js";
 import { decal, FONTS } from "./text.js";
 
@@ -66,15 +66,14 @@ export class ApartmentScene extends Scene {
       outsideView(R, w);
     }
 
-    for (const [lx, lz] of [[0, -2.3], [0, 0.6], [-1.9, 0.6], [2.0, 0.6], [0.5, 3.9]]) {
-      glow(makeBox(R, 0.18, 0.1, 0.18, lx, 2.74, lz, COLORS.LAMP), 0xf0dca0, 0.8);
-      makeBox(R, 0.02, 0.06, 0.02, lx, 2.78, lz, 0x1a1a1a);
-    }
-    this.light(0, 2.5, -2.3, { intensity: 3.2, distance: 6 });
-    this.light(0, 2.5, 0.6, { intensity: 2.6, distance: 5 });
-    this.light(-1.9, 2.5, 0.6, { intensity: 2.2, distance: 4 });
-    this.light(2.0, 2.5, 0.6, { intensity: 2.2, distance: 4 });
-    this.light(0.5, 2.5, 3.9, { intensity: 4.0, distance: 7 });
+    // Свет — только от настоящих светильников.
+    furnishLights(this, R, [
+      { kind: "dome",    x: 0,    z: -2.3, intensity: 3.2, distance: 6 },
+      { kind: "dome",    x: 0,    z: 0.6,  intensity: 2.6, distance: 5 },
+      { kind: "dome",    x: -1.9, z: 0.6,  intensity: 2.2, distance: 4 },
+      { kind: "pendant", x: 2.0,  z: 0.6,  intensity: 2.2, distance: 4, shade: 0x8a3a24 },
+      { kind: "pendant", x: 0.5,  z: 3.9,  intensity: 4.0, distance: 7, shade: 0x6a4a2a },
+    ]);
     this.light(2.0, 1.1, 4.5, { intensity: 0.8, distance: 3, color: 0x4adf7a });   // экран ЭВМ
 
     this.place(...APARTMENT_ORIGIN);

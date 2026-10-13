@@ -51,7 +51,7 @@ export class Game {
     this.scene.fog = new THREE.Fog(0x24211e, FOG_NEAR, FOG_FAR);
     this.hemi = new THREE.HemisphereLight(0x8a8274, 0x2a2620, 0.55);
     this.scene.add(this.hemi);
-    this.camera = new THREE.PerspectiveCamera(72, 1, 0.05, 120);
+    this.camera = new THREE.PerspectiveCamera(72, 1, 0.1, 90);
     this.scene.add(this.camera);
 
     this.bus = new EventBus();

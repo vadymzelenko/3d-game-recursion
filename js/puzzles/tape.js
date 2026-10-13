@@ -24,9 +24,9 @@ export class TapePuzzle extends Overlay {
     this.cv = cv; this.ctx = cv.getContext("2d");
     const btns = h("div", "tp-btns");
     const mk = (label, fn, cls = "") => { const b = h("button", "tp-btn " + cls, label); b.onclick = fn; btns.append(b); return b; };
-    mk("◀◀", () => this._rewind());
-    mk("▶  ПУСК", () => this._play(), "play");
-    mk("■  СТОП", () => this._stop());
+    mk("ПЕРЕМОТКА", () => this._rewind());
+    mk("ПУСК", () => this._play(), "play");
+    mk("СТОП", () => this._stop());
     this.sub = h("div", "rd-sub");
     el.append(cv, btns, this.sub, h("div", "paper-hint", "Esc — отойти"));
     const plays = this.game.state.count("tape_plays");

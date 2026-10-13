@@ -28,7 +28,7 @@ export class RadioPuzzle extends Overlay {
     this.cv = cv; this.ctx = cv.getContext("2d");
     el.append(cv);
     this.sub = h("div", "rd-sub");
-    el.append(this.sub, h("div", "paper-hint", "тяните шкалу мышью · колесо · ← → (Shift — точнее) · Esc — отойти"));
+    el.append(this.sub, h("div", "paper-hint", "тяните шкалу мышью, колесо или стрелки (Shift — точнее) · Esc — отойти"));
 
     let dragging = false, lastX = 0;
     cv.addEventListener("pointerdown", (e) => { dragging = true; lastX = e.clientX; cv.setPointerCapture(e.pointerId); });

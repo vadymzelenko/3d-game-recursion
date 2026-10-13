@@ -19,7 +19,7 @@ export class FuseboxPuzzle extends Overlay {
     const s = this.game.state;
     if (!s.has("key_shield") && !s.is("power_on")) {
       this.game.audio.play("locked");
-      this.game.hud.say("Щиток ЩЭ-3201 заперт на замок. На бирке: «ЩИТ. ЭТ.5». Нужен ключ от щитовой.");
+      this.game.hud.say("Щиток ЩЭ-3201 заперт на замок. На бирке: «ЩИТ. ЭТ.4». Нужен ключ от щитовой.");
       return;
     }
     if (!s.is("fusebox_opened")) {
@@ -39,7 +39,7 @@ export class FuseboxPuzzle extends Overlay {
     const box = h("div", "fb-box");
     const door = h("div", "fb-door");
     const instr = h("div", "fb-instr hand",
-      "ЩИТ. ЭТ.5   ЩЭ-3201\n\nСНАЧАЛА синий предохранитель,\nПОТОМ красный рубильник вверх.");
+      "ЩИТ. ЭТ.4   ЩЭ-3201\n\nСНАЧАЛА синий предохранитель,\nПОТОМ красный рубильник вверх.");
     instr.title = "Инструкция, приклеенная скотчем";
     door.append(instr);
     instr.onclick = () => {

@@ -49,7 +49,7 @@ export class TelescopePuzzle extends Overlay {
     this.sub = h("div", "rd-sub");
     const row = h("div", "ts-row");
     row.append(cv, limbs);
-    root.append(row, this.sub, h("div", "paper-hint", "← → азимут · ↑ ↓ место (Shift — по 10°) · Esc — оторваться от окуляра"));
+    root.append(row, this.sub, h("div", "paper-hint", "стрелки влево-вправо — азимут, вверх-вниз — место (Shift — по 10°) · Esc — оторваться"));
     this.lookT = 0;
     this.lockT = 0;
     this._last = performance.now();

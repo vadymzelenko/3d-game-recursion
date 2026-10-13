@@ -166,7 +166,7 @@ export class EndingScreen {
       el.append(pre);
       await sleep(1200);
       for (const line of OBITUARY) { await this._type(pre, line + "\n", 34); await sleep(180); }
-      const cur = h("span", "end-cursor", "█");
+      const cur = h("span", "end-cursor", "");
       pre.append(cur);
       await sleep(2500);
       cur.classList.add("frozen");

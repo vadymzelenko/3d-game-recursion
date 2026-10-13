@@ -11,7 +11,8 @@ import { apartmentOrigin } from "./hallway.js";
 import { buildApartmentShell, buildWindowFrame, buildEntryCasing, EntryDoor, NORTH_Z } from "./apartment_layout.js";
 import {
   furnishHall, furnishCorridor, furnishBath, furnishKitchen, rug, frame, curtains, radiator,
-  floorLamp, bookshelf, chair, table, sofa, calendar, wallClock, outsideView, clutterShelf,
+  floorLamp, bookshelf, chair, table, sofa, calendar, wallClock, outsideView, clutterShelf, furnishLights,
+  bareBulb, sconce,
 } from "./decor.js";
 import { decal, plate, FONTS } from "./text.js";
 
@@ -35,6 +36,9 @@ class BaseApartmentScene extends Scene {
     this.curtainSides = [-1, 1];
     this.lockedText = null;     // () => текст отказа или null
     this.ajar = () => true;
+    this.mainLamp = "pendant";     // светильник в большой комнате
+    this.mainLight = 4.0;
+    this.shade = 0x6a4a2a;
     this._lastRoom = null;
   }
 
@@ -66,14 +70,13 @@ class BaseApartmentScene extends Scene {
     });
     buildEntryCasing(R, { entryZ: shell.entryZ });
 
-    for (const [lx, lz] of [[0, -2.3], [0, 0.6], [-1.6, 0.6], [1.6, 0.6], [0, 3.9]]) {
-      glow(makeBox(R, 0.18, 0.1, 0.18, lx, 2.74, lz, COLORS.LAMP), 0xf0dca0, 0.8);
-    }
-    this.light(0, 2.5, -2.3, { intensity: 3.0, distance: 6 });
-    this.light(0, 2.5, 0.6, { intensity: 2.2, distance: 5 });
-    this.light(-1.6, 2.5, 0.6, { intensity: 1.6, distance: 4 });
-    this.light(1.6, 2.5, 0.6, { intensity: 1.6, distance: 4 });
-    this.light(0, 2.5, 3.9, { intensity: 4.0, distance: 7 });
+    furnishLights(this, R, [
+      { kind: "dome",    x: 0,    z: -2.3, intensity: 3.0, distance: 6 },
+      { kind: "dome",    x: 0,    z: 0.6,  intensity: 2.2, distance: 5 },
+      { kind: "dome",    x: -1.6, z: 0.6,  intensity: 1.6, distance: 4 },
+      { kind: "pendant", x: 1.6,  z: 0.6,  intensity: 1.6, distance: 4, shade: 0x5a6a5a },
+      { kind: this.mainLamp, x: 0, z: 3.9, intensity: this.mainLight, distance: 7, shade: this.shade, flicker: this.mainFlicker },
+    ]);
 
     for (const w of shell.windows) {
       buildWindowFrame(R, w);
@@ -221,6 +224,7 @@ export class Neighbor30Scene extends BaseApartmentScene {
     this.mainRoomName = "Палата";
     this.wallColor3D = 0x8a9080;
     this.floorOverrides = { hall: 0x707a70, bath: 0x889888, bedroom: 0x8a9488 };
+    this.mainLamp = "dome";
     this.lockedText = () => game.state.is("unlock_30") ? null : "Заперто. Пахнет хлоркой и страхом.";
     this.ajar = () => game.state.is("unlock_30");
   }
@@ -362,7 +366,7 @@ export class Neighbor40Scene extends BaseApartmentScene {
       gm.audio.play("click");
       if (gm.state.has("key_shield") || gm.state.is("power_on")) { gm.hud.say("Под ковриком пусто."); return; }
       gm.state.give("key_shield");
-      gm.hud.say("Под ковриком — ключ. Большой, ржавый. На бирке: «ЩИТ. ЭТ.5». Он холодный. Я кладу его в карман.");
+      gm.hud.say("Под ковриком — ключ. Большой, ржавый. На бирке: «ЩИТ. ЭТ.4». Он холодный. Я кладу его в карман.");
     });
 
     // Стол вахты: журнал, лампа.
@@ -452,17 +456,11 @@ export class Neighbor40Scene extends BaseApartmentScene {
     if (this._bureauAdded) for (const s of this._bureauAdded) s.off = !on;
   }
 
-  // Перевод локальных AABB в мировые (квартира повёрнута на 0 или π).
+  // Перевод локальных AABB в мировые.
   _addLocalSolids(list) {
     const added = [];
-    const o = this.group.position, rot = this.group.rotation.y;
     for (const s of list) {
-      let w;
-      if (Math.abs(rot) < 1e-6) {
-        w = { min: [s.min[0] + o.x, s.min[1] + o.y, s.min[2] + o.z], max: [s.max[0] + o.x, s.max[1] + o.y, s.max[2] + o.z] };
-      } else {
-        w = { min: [o.x - s.max[0], o.y + s.min[1], o.z - s.max[2]], max: [o.x - s.min[0], o.y + s.max[1], o.z - s.min[2]] };
-      }
+      const w = this.worldAABB(s);
       this.solids.push(w);
       this.game.solids.push(w);
       added.push(w);
@@ -595,6 +593,9 @@ export class Neighbor43Scene extends BaseApartmentScene {
     this.sharedEast = true;
     this.curtainSides = [-1];
     this.lockedText = () => game.state.is("unlock_43") ? null : "Заперто. За дверью — шорох. Как плёнка по головке магнитофона.";
+    this.mainLamp = "bulb";        // голая лампочка над магнитофоном
+    this.mainLight = 2.2;
+    this.mainFlicker = 0.6;
     this.ajar = () => game.state.is("unlock_43");
   }
 
@@ -651,7 +652,6 @@ export class Neighbor43Scene extends BaseApartmentScene {
     this._paper(R, 1.6, 0.6, 5.0, "scrap43", "Обрывок", { w: 0.16, d: 0.12, color: 0xe0d7b8, rot: 0.4 });
 
     wallClock(R, 2.3, 2.1, 3.6, "w");
-    this.light(0, 2.4, 4.4, { intensity: 1.2, distance: 3, color: 0xffd090, flicker: 0.6 });
   }
 
   onUpdate(dt) {
@@ -744,7 +744,10 @@ export class Neighbor44Scene extends BaseApartmentScene {
     frame(R, 2.3, 1.7, 3.0, "w", 0.4, 0.5, "portrait");
     frame(R, 2.3, 1.7, 4.0, "w", 0.4, 0.5, "portrait");
     floorLamp(R, S, 2.0, 5.2);
-    this.light(0.3, 1.6, 4.9, { intensity: 1.0, distance: 3, color: 0xa0b8d0 });
+    // Два бра по бокам трюмо — холодный свет.
+    sconce(R, -0.55, 1.95, 5.5, "s");
+    sconce(R, 1.15, 1.95, 5.5, "s");
+    this.light(0.3, 1.95, 5.1, { intensity: 1.4, distance: 3.5, color: 0xb0c4dc });
   }
 
   _drawMirror(c, w, h, k) {
@@ -915,7 +918,8 @@ export class Neighbor50Scene extends BaseApartmentScene {
     sky.position.set(0.3, 4, NORTH_Z + 20);
     sky.rotation.y = Math.PI;
     sky.userData.noPick = true;
-    this.light(0.3, 2.2, NORTH_Z + 0.8, { intensity: 1.5, distance: 4, color: 0x8090c0 });
+    sconce(R, 0.45, 2.25, NORTH_Z + 0.1, "n");
+    this.light(0.45, 2.2, NORTH_Z + 0.5, { intensity: 1.6, distance: 4, color: 0xc0c8e0 });
 
     // Балконная дверь (проём) — без створки, сквозняк.
   }

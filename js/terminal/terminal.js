@@ -340,7 +340,7 @@ export class Terminal {
   async _incomingCall() {
     this.game.audio.play("ring");
     this.println("");
-    this.println("▓▓▓ ВХОДЯЩИЙ ВЫЗОВ. ОПЕРАТОР: НИКИТИН В.П. ▓▓▓", "alert");
+    this.println("=== ВХОДЯЩИЙ ВЫЗОВ. ОПЕРАТОР: НИКИТИН В.П. ===", "alert");
     this.ask("yn", async (a) => {
       if (a.startsWith("д") || a.startsWith("y") || a.startsWith("l")) {
         this._setMode("busy");
@@ -375,13 +375,13 @@ export class Terminal {
     if (push) this._netHist.push(url);
     this._links = pg.links || [];
     this.println("");
-    this.println("┌─ " + pg.title + " ─".padEnd(Math.max(2, 56 - pg.title.length), "─"), "net-title");
+    this.println("== " + pg.title + " " + "=".repeat(Math.max(2, 56 - pg.title.length)), "net-title");
     this.lines(pg.body.split("\n"), "net");
     if (this._links.length) {
       this.println("");
       this._links.forEach(([label], i) => this.println(`  [${i + 1}] ${label}`, "net-link"));
     }
-    this.println("└ номер — перейти · адрес — открыть · b — назад · q — выход", "dim");
+    this.println("-- номер: перейти · адрес: открыть · b: назад · q: выход", "dim");
   }
 
   _browserInput(v) {
@@ -414,7 +414,7 @@ export class Terminal {
     const row = this.println("", "ext");
     const a = document.createElement("a");
     a.href = href; a.target = "_blank"; a.rel = "noopener";
-    a.textContent = "↗ " + href;
+    a.textContent = href;
     a.addEventListener("click", () => { s.set("arg_opened"); });
     row.append("Передать адрес наблюдателю: ", a);
     s.set("arg_link_shown");
@@ -573,9 +573,9 @@ const COMMANDS = {
       const row = [];
       for (let f = 200; f <= 600; f += 8) {
         const d = Math.abs(f - 404);
-        row.push(d < 6 ? "█" : d < 20 ? "▅" : Math.random() < 0.3 ? "▂" : "▁");
+        row.push(d < 6 ? "#" : d < 20 ? "=" : Math.random() < 0.3 ? "-" : ".");
       }
-      this.lines(["200 кГц " + row.join("") + " 600 кГц", "        " + " ".repeat(Math.round((404 - 200) / 8)) + "↑ 404"]);
+      this.lines(["200 кГц " + row.join("") + " 600 кГц", "        " + " ".repeat(Math.round((404 - 200) / 8)) + "^ 404"]);
     } else if (sub === "listen") {
       if (!s.is("radio_tuned")) { this.println("Шум. Голосов нет.", "dim"); return; }
       this.lines(["«…азимут 312… место +14… повторяю… азимут 312… место +14…»"], "voice");

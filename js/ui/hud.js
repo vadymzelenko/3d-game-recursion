@@ -94,6 +94,7 @@ export class HUD {
     const b = document.createElement("div"); b.className = "toast-text"; b.textContent = text;
     el.append(h, b);
     this.elToasts.appendChild(el);
+    while (this.elToasts.children.length > 4) this.elToasts.firstChild.remove();
     requestAnimationFrame(() => el.classList.add("show"));
     setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 600); }, 4200);
   }
