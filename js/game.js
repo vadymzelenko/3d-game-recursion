@@ -26,6 +26,8 @@ import { RadioPuzzle } from "./puzzles/radio.js";
 import { TapePuzzle } from "./puzzles/tape.js";
 import { TelescopePuzzle } from "./puzzles/telescope.js";
 import { StampsPuzzle } from "./puzzles/stamps.js";
+import { ChoicePuzzle } from "./puzzles/choice.js";
+import { CodeLock } from "./puzzles/codelock.js";
 import { ApartmentScene, BED_SPOT } from "./world/apartment.js";
 import { HallwayScene } from "./world/hallway.js";
 import {
@@ -33,7 +35,8 @@ import {
   Neighbor43Scene, Neighbor44Scene, Neighbor50Scene,
 } from "./world/neighbors.js";
 import { DOCS } from "./data/docs.js";
-import { cachedMaterials } from "./utils.js";
+import { cachedMaterials, setMaxAniso } from "./utils.js";
+import { buildCity } from "./world/city.js";
 
 const FOG_NEAR = 4, FOG_FAR = 24;
 const ARG_KEY = "recursion1988_arg";
@@ -46,12 +49,13 @@ export class Game {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     this.renderer.setClearColor(0x1a1816);
+    setMaxAniso(Math.min(16, this.renderer.capabilities.getMaxAnisotropy()));
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.Fog(0x24211e, FOG_NEAR, FOG_FAR);
     this.hemi = new THREE.HemisphereLight(0x8a8274, 0x2a2620, 0.55);
     this.scene.add(this.hemi);
-    this.camera = new THREE.PerspectiveCamera(72, 1, 0.1, 90);
+    this.camera = new THREE.PerspectiveCamera(72, 1, 0.1, 140);
     this.scene.add(this.camera);
 
     this.bus = new EventBus();
@@ -76,6 +80,8 @@ export class Game {
       tape: new TapePuzzle(this),
       telescope: new TelescopePuzzle(this),
       stamps: new StampsPuzzle(this),
+      choice: new ChoicePuzzle(this),
+      codelock: new CodeLock(this),
     };
     this.touch = new TouchControls(this);
     this.gamepad = new GamepadInput(this);
@@ -97,6 +103,7 @@ export class Game {
 
   // ── Мир ──────────────────────────────────────────────────
   build() {
+    buildCity(this.scene);
     this.scenes = {
       apartment:   new ApartmentScene(this),
       hallway:     new HallwayScene(this),
@@ -225,6 +232,7 @@ export class Game {
     if (this._dying) return;
     this._dying = true;
     for (const o of [...this.input.layers]) o.close?.();
+    this.audio.silenceLoops();
     this.audio.play("death");
     this.effects.glitch(1.5);
     await this.hud.fade(true, 900);
@@ -285,6 +293,7 @@ export class Game {
   async ending(kind) {
     this.running = false;
     for (const o of [...this.input.layers]) o.close?.();
+    this.audio.silenceLoops();
     this.hud.clearCaptions();
     GameState.setMeta({ ["ending_" + kind]: (GameState.meta()["ending_" + kind] || 0) + 1 });
 

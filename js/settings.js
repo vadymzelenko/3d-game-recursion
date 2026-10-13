@@ -1,14 +1,13 @@
 // Глобальные константы игры.
 
 export const SETTINGS = {
-  PLAYER_SPEED: 3.2,
+  PLAYER_SPEED: 2.6,
   PLAYER_HEIGHT: 1.7,
   PLAYER_RADIUS: 0.35,
   MOUSE_SENSITIVITY: 0.0025,
   INTERACT_DISTANCE: 3.0,
 
   GRAVITY: 18.0,
-  JUMP_SPEED: 5.0,
 };
 
 export const COLORS = {

@@ -11,7 +11,7 @@ import { apartmentOrigin } from "./hallway.js";
 import { buildApartmentShell, buildWindowFrame, buildEntryCasing, EntryDoor, NORTH_Z } from "./apartment_layout.js";
 import {
   furnishHall, furnishCorridor, furnishBath, furnishKitchen, rug, frame, curtains, radiator,
-  floorLamp, bookshelf, chair, table, sofa, calendar, wallClock, outsideView, clutterShelf, furnishLights,
+  floorLamp, bookshelf, chair, table, sofa, calendar, wallClock, clutterShelf, furnishLights,
   bareBulb, sconce,
 } from "./decor.js";
 import { decal, plate, FONTS } from "./text.js";
@@ -80,7 +80,6 @@ class BaseApartmentScene extends Scene {
 
     for (const w of shell.windows) {
       buildWindowFrame(R, w);
-      if (!w.noView) outsideView(R, w);
     }
 
     this._furnishCommon(R, shell.dims);
@@ -137,6 +136,7 @@ class BaseApartmentScene extends Scene {
     const id = room ? room.id : (l.z > NORTH_Z ? "balcony" : null);
     if (id && id !== this._lastRoom) {
       this._lastRoom = id;
+      if (id === "balcony") gm.state.set("on_balcony");
       gm.hud.setLocation(`${this.name} · ${room ? room.name : "Балкон"}`);
     }
   }
@@ -166,8 +166,34 @@ export class Neighbor20Scene extends BaseApartmentScene {
     const sh1 = bookshelf(R, S, -2.15, 3.3, 0.4, 2.0, 2.6, "w");
     const sh2 = bookshelf(R, S, 2.15, 3.3, 0.4, 2.0, 2.6, "e");
     const sh3 = bookshelf(R, S, -1.6, 5.35, 1.2, 0.4, 2.6, "n");
-    new Interactable([...sh1, ...sh2, ...sh3].filter(Boolean), "Полки", () => {
-      gm.hud.say("«Кибернетика и сознание». «Дискретные автоматы». «Шахматные этюды». Я знаю эти книги. Я читал их. Когда-то.");
+    new Interactable([...sh1, ...sh2, ...sh3].filter(Boolean), "Книжные стеллажи", () => {
+      if (gm.state.is("manuscript_found")) {
+        gm.hud.say("«Кибернетика и сознание». «Дискретные автоматы». «Шахматные этюды». Я знаю эти книги. Я читал их. Когда-то.");
+        return;
+      }
+      if (!gm.state.hasRead("formular20")) {
+        gm.hud.say("Сотни корешков, на торцах — шифры фондов. Без шифра здесь можно искать до утра. Утро не наступит.");
+        return;
+      }
+      gm.puzzles.choice.show({
+        title: "Стеллажи читального зала",
+        note: "На торцах — фонд и шифр. Формуляр: фонд «Р», шифр 22.18, стеллаж у окна.",
+        intro: "Где-то здесь моя рукопись.",
+        answer: "r2218w",
+        solvedText: "Фонд «Р», 22.18. Тонкая папка, перевязанная бечёвкой. Мой почерк на обложке.",
+        options: [
+          { id: "t3297", label: "Фонд «Т» · 32.97", sub: "у двери", reply: "Вычислительная техника. Справочники по ДВК. Не то." },
+          { id: "r2218d", label: "Фонд «Р» · 22.18", sub: "у двери", reply: "Шифр тот, но стеллаж у двери. Здесь чужие рукописи — диссертации ВЦ." },
+          { id: "sh75", label: "Фонд «Ш» · 75.581", sub: "у стола", reply: "Шахматные задачники. Этюды Рети. Не рукопись." },
+          { id: "r2218w", label: "Фонд «Р» · 22.18", sub: "у окна" },
+          { id: "r2281w", label: "Фонд «Р» · 22.81", sub: "у окна", reply: "Цифры переставлены. Теория вероятностей. Не то." },
+          { id: "f87", label: "Фонд «Ф» · 87.21", sub: "у окна", reply: "Философия. «Кибернетика и сознание» — на месте. Рукописи нет." },
+        ],
+        onSolve: () => {
+          gm.state.set("manuscript_found");
+          gm.readDoc("manuscript20");
+        },
+      });
     });
 
     // Резной дубовый столик с шахматами.
@@ -203,7 +229,9 @@ export class Neighbor20Scene extends BaseApartmentScene {
     table(R, S, -1.0, 4.6, 1.2, 0.7, 0.76, COLORS.DESK);
     glow(makeBox(R, 0.16, 0.22, 0.16, -1.45, 0.87, 4.75, 0x2a6a3a), 0xa0e0b0, 0.5);   // зелёная лампа
     this._paper(R, -0.8, 0.76, 4.5, "formular20", "Библиотечный формуляр", { color: 0xe8dcb8, rot: 0.15 });
-    this._paper(R, -1.15, 0.76, 4.45, "manuscript20", "Рукопись", { w: 0.24, d: 0.32, color: 0xd8d0b8, rot: -0.1 });
+    // Рукопись появляется на столе, когда её найдут на стеллаже.
+    this._manuscript = this._paper(R, -1.15, 0.76, 4.45, "manuscript20", "Рукопись", { w: 0.24, d: 0.32, color: 0xd8d0b8, rot: -0.1,
+      enabled: () => this._manuscript.visible });
 
     floorLamp(R, S, 1.9, 5.2);
     rug(R, 0.2, 3.9, 2.4, 1.6, 0x4a2a22, 0x2e1a14);
@@ -212,6 +240,7 @@ export class Neighbor20Scene extends BaseApartmentScene {
   sync() {
     const s = this.game.state;
     this._kingPiece.visible = !s.has("punchcard");
+    this._manuscript.visible = s.is("manuscript_found");
     this._stash.scale.x = s.has("punchcard") ? 0.2 : 1;
   }
 }
@@ -385,6 +414,23 @@ export class Neighbor40Scene extends BaseApartmentScene {
     });
     chair(R, S, 0.2, 3.75, "s");
 
+    // Ящик стола с кодовым замком — там запасные пробки.
+    const drawer = makeBox(R, 0.5, 0.14, 0.04, 0.55, 0.62, 4.23, 0x4a3420);
+    const dial = makeBox(R, 0.12, 0.05, 0.02, 0.55, 0.62, 4.205, 0x8a8060);
+    new Interactable([drawer, dial], () => this._fuseTaken() ? "Ящик стола (пусто)" : "Ящик стола: кодовый замок", () => {
+      if (this._fuseTaken()) { gm.audio.play("drawer"); gm.hud.say("Ящик пуст. Только пыль и огрызок карандаша."); return; }
+      gm.puzzles.codelock.show({
+        title: "Ящик стола вахты",
+        plate: "ЗАМОК · 3 ЦИФРЫ",
+        code: "042",
+        hint: "Три колёсика с цифрами. На крышке выцарапано: «где свет».",
+        onSolve: () => {
+          gm.state.give("fuse_blue");
+          gm.hud.say("Щелчок. В ящике — коробка с пробками. Одна целая: синий предохранитель. Беру.");
+        },
+      });
+    });
+
     // Домофон.
     const intercom = makeBox(R, 0.3, 0.4, 0.08, -1.75, 1.4, -1.14, 0x2a2a28);
     const grille = makeBox(R, 0.18, 0.18, 0.02, -1.75, 1.45, -1.19, 0x141414);
@@ -396,6 +442,7 @@ export class Neighbor40Scene extends BaseApartmentScene {
     // Стеллажи с делами.
     const shelf = bookshelf(R, S, 1.95, 3.0, 0.7, 0.4, 2.0, "w");
     new Interactable(shelf, "Стеллаж с делами", () => {
+      if (gm.state.is("bureau") && !gm.state.is("file_found")) { this._searchFile(); return; }
       gm.hud.say(gm.state.is("bureau")
         ? "Полки уходят вглубь. Дальше, чем позволяет комната. На каждой папке — моя фамилия."
         : "Папки с личными делами жильцов. Все датированы 1988 годом.");
@@ -410,7 +457,12 @@ export class Neighbor40Scene extends BaseApartmentScene {
     this._bureau = B;
     this._bureauSolids = [];
     // Бесконечные полки: ряды стеллажей уходят в туман.
-    for (const x of [-1.6, -0.4, 0.8]) bookshelf(B, this._bureauSolids, x, 5.3, 1.1, 0.3, 2.75, "n");
+    const rows = [];
+    for (const x of [-1.6, -0.4, 0.8]) rows.push(...bookshelf(B, this._bureauSolids, x, 5.3, 1.1, 0.3, 2.75, "n"));
+    new Interactable(rows, "Бесконечные стеллажи", () => {
+      if (!gm.state.is("file_found")) this._searchFile();
+      else gm.hud.say("Папки, папки, папки. Дальше, чем позволяет комната.");
+    }, { enabled: () => gm.state.is("bureau") });
     // Печатная машинка на столе вахты.
     const tw = [
       makeBox(B, 0.36, 0.12, 0.3, -0.12, 0.84, 4.5, 0x2a2a2a),
@@ -426,8 +478,14 @@ export class Neighbor40Scene extends BaseApartmentScene {
       makeBox(B, 0.06, 0.1, 0.06, 0.76, 0.81, 4.82, 0x1a2a5a),
       makeBox(B, 0.24, 0.02, 0.32, 0.72, 0.77, 4.42, 0xc8b890),
     ];
-    new Interactable(stamps, () => gm.state.is("stamped") ? "Личное дело" : "Штампы и личное дело",
-      () => gm.puzzles.stamps.open(), { enabled: () => gm.state.is("bureau") });
+    new Interactable(stamps, () => gm.state.is("stamped") ? "Личное дело" : "Штампы",
+      () => {
+        if (!gm.state.is("file_found")) {
+          gm.hud.say("Два штампа: «УВОЛЕН» и «ПОСМЕРТНО». Ставить их не на что — нужно моё личное дело. Оно где-то на стеллажах.");
+          return;
+        }
+        gm.puzzles.stamps.open();
+      }, { enabled: () => gm.state.is("bureau") });
     // Зеркало в углу.
     const mf = makeBox(B, 0.5, 1.5, 0.05, 1.9, 1.3, 5.45, 0x2a2622);
     const mg = glow(makeBox(B, 0.42, 1.4, 0.02, 1.9, 1.3, 5.42, 0x8a96a0), 0x2a3038, 0.5);
@@ -443,6 +501,35 @@ export class Neighbor40Scene extends BaseApartmentScene {
       gm.state.set("mirror40");
       gm.state.learn("object");
     }, { enabled: () => gm.state.is("bureau") });
+  }
+
+  // Поиск папки на бесконечных стеллажах: разделы по алфавиту.
+  _searchFile() {
+    const gm = this.game;
+    gm.puzzles.choice.show({
+      title: "Стеллажи с личными делами",
+      note: "Ярлыки на торцах полок, от руки. Все папки — 1988 год.",
+      intro: "Где-то здесь моё личное дело.",
+      answer: "lo",
+      solvedText: "Л — М — Мо… Морозов А. В. Папка тоньше остальных. Беру.",
+      options: [
+        { id: "ag", label: "А — Г", sub: "полка 1", reply: "Абрамов, Белов, Воронина… Чужие фамилии." },
+        { id: "dk", label: "Д — К", sub: "полка 2", reply: "Дьячков, Ефимова, Зуев, Кравцов… Не здесь." },
+        { id: "lo", label: "Л — О", sub: "полка 3" },
+        { id: "pt", label: "П — Т", sub: "полка 4", reply: "Петров, Смирнова Н. П., Тарасов… Смирнова — вахтёр. Не моё." },
+        { id: "uy", label: "У — Я", sub: "полка 5", reply: "Ульянов, Федосеев, Яковлев… Не здесь." },
+        { id: "x",  label: "без ярлыка", sub: "полка 6", reply: "Пустые папки. На каждой — «ОБЪЕКТ». Без фамилий." },
+      ],
+      onSolve: () => {
+        gm.state.set("file_found");
+        gm.hud.say("Личное дело № 42. Внутри — фотография. Я, молодой, улыбаюсь. На столе — штампы.");
+      },
+    });
+  }
+
+  _fuseTaken() {
+    const s = this.game.state;
+    return s.has("fuse_blue") || s.is("fuse_in") || s.is("power_on");
   }
 
   sync() {
@@ -494,30 +581,16 @@ export class Neighbor41Scene extends BaseApartmentScene {
   _buildProps(R) {
     const gm = this.game, S = this.solids;
 
-    // Стены исписаны формулами; в центре — «4·0·4».
-    const board = makePanel(R, 3.2, 1.9, 1024, 608, (c, w, h) => {
-      c.fillStyle = "rgba(0,0,0,0)"; c.clearRect(0, 0, w, h);
-      c.fillStyle = "rgba(230,228,210,0.55)";
-      const f = [
-        "ψ(t+1) = Ŝ·ψ(t)", "∮ E·dl = −dΦ/dt", "640K = 655 360", "λ = c / f",
-        "f₀ = 404 ± 0,5 кГц", "Ŝ = e^{−iHt/ħ}", "det|A − λE| = 0", "ОБЕРЕГ → ∞", "U = 12 кВ",
-        "τ ≈ 04:12", "∂ψ/∂t = −Γψ", "N → 3 ?", "DO 10 I=1,640",
-      ];
-      for (let i = 0; i < 40; i++) {
-        c.font = `${500} ${26 + Math.random() * 16}px ${FONTS.hand}`;
-        c.save();
-        c.translate(Math.random() * w, Math.random() * h);
-        c.rotate((Math.random() - 0.5) * 0.25);
-        c.fillText(f[i % f.length], -60, 0);
-        c.restore();
-      }
-    });
-    board.material.transparent = true;
-    board.position.set(-2.29, 1.55, 3.9);
+    // Школьная доска во всю стену: формулы рядами, в центре — «4·0·4».
+    const BW = 3.0, BH = 1.45, by = 1.55, bz = 3.9;
+    makeBox(R, 0.04, BH + 0.12, BW + 0.12, -2.28, by, bz, 0x4a3420);                 // рама
+    const board = makePanel(R, BW, BH, 2048, 990, (c, w, h) => this._drawBoard(c, w, h));
+    board.position.set(-2.255, by, bz);
     board.rotation.y = Math.PI / 2;
     board.userData.noPick = true;
-    this._graffiti = decal(R, "4·0·4", { x: -2.285, y: 1.75, z: 3.9, face: "e", width: 1.7, style: "chalk", px: 200 });
-    new Interactable(makeHitbox(R, 0.1, 1.8, 3.0, -2.25, 1.55, 3.9), "Формулы на стене", () => {
+    makeBox(R, 0.08, 0.03, BW, -2.22, by - BH / 2 - 0.03, bz, 0x4a3420);              // полочка для мела
+    makeBox(R, 0.03, 0.02, 0.08, -2.2, by - BH / 2 - 0.005, bz + 0.6, 0xe8e6da);       // мелок
+    new Interactable(makeHitbox(R, 0.1, BH, BW, -2.22, by, bz), "Доска с формулами", () => {
       gm.readDoc("formulas41", () => {
         gm.state.learn("graffiti");
         gm.hud.say("Мел свежий. Я провожу пальцем — палец белеет. Я писал это. Но когда?");
@@ -560,6 +633,46 @@ export class Neighbor41Scene extends BaseApartmentScene {
     clutterShelf(R, 2.3, 1.65, 4.0, "w", 0.6);
   }
 
+  _drawBoard(c, w, h) {
+    // тёмно-зелёная доска с разводами стёртого мела
+    c.fillStyle = "#1f2f26"; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 26; i++) {
+      const g = c.createRadialGradient(Math.random() * w, Math.random() * h, 10, Math.random() * w, Math.random() * h, 260);
+      g.addColorStop(0, "rgba(200,210,200,0.05)"); g.addColorStop(1, "rgba(200,210,200,0)");
+      c.fillStyle = g; c.fillRect(0, 0, w, h);
+    }
+    const chalk = (text, x, y, size, rot = 0, a = 0.82) => {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      c.font = `500 ${size}px ${FONTS.hand}`;
+      c.textBaseline = "middle";
+      for (let k = 0; k < 3; k++) {
+        c.fillStyle = `rgba(236,234,222,${a * 0.42})`;
+        c.fillText(text, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
+      }
+      c.restore();
+    };
+    const left = [
+      "ψ(t+1) = Ŝ · ψ(t)",
+      "Ŝ = e^(−iHt/ħ)",
+      "∂ψ/∂t = −Γψ",
+      "det|A − λE| = 0",
+    ];
+    const right = [
+      "640 К = 655 360 байт",
+      "λ = c / f",
+      "U = 12 кВ  (!)",
+      "DO 10 I = 1, 640",
+    ];
+    left.forEach((t, i) => chalk(t, 70, 170 + i * 190, 62, -0.02 + i * 0.01));
+    right.forEach((t, i) => chalk(t, w - 640, 170 + i * 190, 62, 0.015 - i * 0.008));
+    // в центре — крупно, поверх всего
+    chalk("4 · 0 · 4", w / 2 - 300, h / 2 + 10, 210, -0.03, 1);
+    c.strokeStyle = "rgba(236,234,222,0.6)"; c.lineWidth = 9;
+    c.beginPath(); c.ellipse(w / 2, h / 2 + 10, 400, 190, -0.04, 0.15, Math.PI * 2 - 0.1); c.stroke();
+    chalk("f₀ = 404 ± 0,5 кГц", w / 2 - 270, h - 110, 64, 0.01, 0.7);
+    chalk("ОБЕРЕГ → ∞ ?", w / 2 - 210, 110, 64, -0.01, 0.7);
+  }
+
   sync() {
     const s = this.game.state;
     const on = s.is("power_on");
@@ -573,7 +686,8 @@ export class Neighbor41Scene extends BaseApartmentScene {
     const gm = this.game;
     const s = gm.state;
     let vol = 0;
-    if (s.is("power_on") && !gm.puzzles.radio.isOpen) {
+    // Только внутри квартиры и только пока несущая не найдена.
+    if (s.is("power_on") && !s.is("radio_tuned") && gm.current === this && !gm.puzzles.radio.isOpen) {
       const p = this.toLocal(gm.player.position);
       const d = Math.hypot(p.x - 1.75, p.z - 3.0) + Math.abs(gm.player.position.y - this.group.position.y - 1.6);
       vol = Math.max(0, 1 - d / 9) * (s.act < 5 ? 0.6 : 0.25);
@@ -718,6 +832,7 @@ export class Neighbor44Scene extends BaseApartmentScene {
     new Interactable([seat, back, ...arms, ...fig.children], () =>
       gm.state.is("mirror44_solved") ? "Пустое кресло" : "Подойти к сидящему", () => {
         if (gm.state.is("mirror44_solved")) { gm.hud.say("Кресло пусто. Сиденье ещё тёплое."); return; }
+        gm.state.set("figure_seen");
         gm.audio.play("glitch");
         gm.effects.glitch(0.6);
         gm.hud.say("Экран заливают помехи. Он не двигается. Он смотрит в трюмо. Он ждёт, когда туда посмотрю я.");
@@ -907,19 +1022,8 @@ export class Neighbor50Scene extends BaseApartmentScene {
     this._snow.userData.noPick = true;
     R.add(this._snow);
 
-    // Небо за балконом.
-    const sky = makePanel(R, 40, 24, 512, 300, (c, w, h) => {
-      const g = c.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, "#05070e"); g.addColorStop(0.7, "#141826"); g.addColorStop(1, "#262632");
-      c.fillStyle = g; c.fillRect(0, 0, w, h);
-      for (let i = 0; i < 300; i++) { c.fillStyle = `rgba(230,230,200,${Math.random() * 0.8})`; c.fillRect(Math.random() * w, Math.random() * h * 0.7, 1, 1); }
-    }, { basic: true });
-    sky.material.fog = false;
-    sky.position.set(0.3, 4, NORTH_Z + 20);
-    sky.rotation.y = Math.PI;
-    sky.userData.noPick = true;
     sconce(R, 0.45, 2.25, NORTH_Z + 0.1, "n");
-    this.light(0.45, 2.2, NORTH_Z + 0.5, { intensity: 1.6, distance: 4, color: 0xc0c8e0 });
+    this.light(0.45, 2.2, NORTH_Z + 0.5, { intensity: 1.4, distance: 4, color: 0xffd8a8 });
 
     // Балконная дверь (проём) — без створки, сквозняк.
   }

@@ -221,12 +221,16 @@ export class AudioManager {
       const n = ctx.createBufferSource(); n.buffer = this._noiseBuffer(); n.loop = true;
       const bf = ctx.createBiquadFilter(); bf.type = "bandpass"; bf.frequency.value = 1800; bf.Q.value = 0.5;
       n.connect(bf).connect(ng).connect(this.out); n.start();
+      // Несущая с лёгкой амплитудной модуляцией. Модулятор подключён к
+      // промежуточному узлу, а общий уровень sg может опускаться ровно до нуля
+      // (раньше модулятор добавлялся к sg.gain, и тон звучал вечно).
       const sg = ctx.createGain(); sg.gain.value = 0;
+      const mod = ctx.createGain(); mod.gain.value = 0.6;
       const car = ctx.createOscillator(); car.type = "sine"; car.frequency.value = 404 * 2;
       const am = ctx.createOscillator(); am.frequency.value = 3.1;
       const amg = ctx.createGain(); amg.gain.value = 0.4;
-      am.connect(amg).connect(sg.gain);
-      car.connect(sg).connect(this.out); car.start(); am.start();
+      am.connect(amg).connect(mod.gain);
+      car.connect(mod).connect(sg).connect(this.out); car.start(); am.start();
       return { ng, sg, bf };
     });
     if (L) { L.ng.gain.value = 0.15; }
@@ -262,10 +266,10 @@ export class AudioManager {
   computerHum(on) {
     const L = this._loop("crt", (ctx) => {
       const g = ctx.createGain(); g.gain.value = 0;
-      const o = ctx.createOscillator(); o.type = "triangle"; o.frequency.value = 7800;
-      const og = ctx.createGain(); og.gain.value = 0.02; o.connect(og).connect(g); o.start();
+      // Мягкий гул трансформатора кинескопа (без пронзительного писка строчной развёртки).
       const h = ctx.createOscillator(); h.type = "sine"; h.frequency.value = 100;
-      h.connect(g); h.start();
+      const h2 = ctx.createOscillator(); h2.type = "sine"; h2.frequency.value = 50;
+      h.connect(g); h2.connect(g); h.start(); h2.start();
       g.connect(this.out);
       return { g };
     });
@@ -283,6 +287,17 @@ export class AudioManager {
       return { g };
     });
     if (L) L.g.gain.setTargetAtTime(level * 0.08, this.ctx.currentTime, 0.3);
+  }
+
+  // Заглушить все постоянные источники (смерть, финал, смена цикла).
+  silenceLoops() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const L = this._loops;
+    for (const key of ["tune", "tape", "crt", "drone", "idle"]) {
+      const l = L[key]; if (!l) continue;
+      for (const g of [l.g, l.ng, l.sg]) if (g) g.gain.setTargetAtTime(0, t, 0.05);
+    }
   }
 
   // ── Разовые звуки ────────────────────────────────────────

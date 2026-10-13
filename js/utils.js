@@ -23,6 +23,12 @@ function getMat(color) {
   return _matCache.get(color);
 }
 
+// Максимальная анизотропная фильтрация видеокарты — надписи под углом
+// остаются чёткими. Задаётся игрой после создания рендерера.
+let _aniso = 4;
+export function setMaxAniso(n) { _aniso = Math.max(1, n | 0); }
+export function maxAniso() { return _aniso; }
+
 // Все общие материалы (для эффектов распада мира).
 export function cachedMaterials() { return _matCache; }
 
@@ -83,7 +89,7 @@ export function makePanel(parent, w, h, pxW, pxH, draw, { emissive = 0, basic = 
   draw(ctx, pxW, pxH);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  tex.anisotropy = maxAniso();
   const mat = basic
     ? new THREE.MeshBasicMaterial({ map: tex })
     : new THREE.MeshLambertMaterial({

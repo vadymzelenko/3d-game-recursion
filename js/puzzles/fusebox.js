@@ -26,7 +26,7 @@ export class FuseboxPuzzle extends Overlay {
       s.set("fusebox_opened");
       this.game.audio.play("drawer");
     }
-    this.fuseIn = s.is("power_on");
+    this.fuseIn = s.is("power_on") || s.is("fuse_in");
     this.pick = null;
     super.open();
     this.render();
@@ -56,16 +56,24 @@ export class FuseboxPuzzle extends Overlay {
     socket.append(h("span", "fb-cap", "F1"));
     if (this.fuseIn) socket.append(h("div", "fb-fuse in"));
     const tray = h("div", "fb-tray");
-    tray.append(h("span", "fb-cap", "запас"));
-    if (!this.fuseIn) {
+    tray.append(h("span", "fb-cap", "в кармане"));
+    if (!this.fuseIn && s.has("fuse_blue")) {
       const fuse = h("div", "fb-fuse" + (this.pick === "fuse" ? " picked" : ""));
       fuse.title = "Синий предохранитель";
       fuse.onclick = (e) => { e.stopPropagation(); this.pick = this.pick === "fuse" ? null : "fuse"; this.game.audio.play("click"); this.render(); };
       tray.append(fuse);
     }
     socket.onclick = () => {
-      if (this.fuseIn || this.pick !== "fuse") return;
+      if (this.fuseIn) return;
+      if (this.pick !== "fuse") {
+        this.status(s.has("fuse_blue")
+          ? "Гнездо F1 пустое. Сначала взять предохранитель."
+          : "Гнездо F1 пустое: старая пробка сгорела. Нужен запасной синий предохранитель.");
+        return;
+      }
       this.fuseIn = true; this.pick = null;
+      s.take("fuse_blue");
+      s.set("fuse_in");
       this.game.audio.play("fuse");
       this.status("Предохранитель входит с сухим щелчком. Лампочка на щитке мигает.");
       this.render();

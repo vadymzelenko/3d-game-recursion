@@ -415,65 +415,6 @@ export function tvSet(R, solids, x, z, face) {
 }
 
 // ----------------------------------------------------------------
-// Вид «за окном» для соседей
-// ----------------------------------------------------------------
-// Вид «за окном»: настоящие 3D-дома с окнами вместо плоской картинки.
-let _foggyMat = null;
-function foggyMat() {
-    if (_foggyMat) return _foggyMat;
-    const cv = document.createElement("canvas");
-    cv.width = 128; cv.height = 64;
-    const c = cv.getContext("2d");
-    c.fillStyle = "#2a2832"; c.fillRect(0, 0, 128, 64);
-    const tex = new THREE.CanvasTexture(cv);
-    _foggyMat = new THREE.MeshBasicMaterial({ map: tex, fog: false });
-    return _foggyMat;
-}
-
-export function outsideView(R, { x, z, rotY, w, h, sillY }) {
-    const G = new THREE.Group();
-    G.position.set(x, 0, z);
-    G.rotation.y = rotY;
-    R.add(G);
-
-    // Дальний «туман» — плоскость позади домов
-    const fogPlane = flat(G, w + 8, h + 8, 0, sillY + h / 2, 22, foggyMat());
-    fogPlane.rotation.y = Math.PI;
-
-    // 3D-дома. Z-координата — насколько глубоко за окном.
-    const buildingColors = [0x2a2830, 0x33303a, 0x28252e];
-    const winColors = [0xc8a860, 0xd8b870, 0xb89850];
-
-    const buildings = [
-        { x: -3.5, z: 6,  w: 3.0, h: 5.5, d: 3.0 },
-        { x:  1.5, z: 8,  w: 3.5, h: 7.0, d: 3.5 },
-        { x:  5.0, z: 7,  w: 3.0, h: 5.0, d: 3.0 },
-        { x: -6.0, z: 10, w: 4.0, h: 8.0, d: 4.0 },
-        { x:  4.0, z: 12, w: 4.5, h: 9.0, d: 4.5 },
-    ];
-
-    for (const b of buildings) {
-        const color = buildingColors[(Math.random() * buildingColors.length) | 0];
-        makeBox(G, b.w, b.h, b.d, b.x, b.h / 2, b.z, color);
-
-        // Светящиеся окна на «лицевой» стороне (-z)
-        const cols = Math.max(1, Math.floor(b.w / 0.9));
-        const rows = Math.max(1, Math.floor(b.h / 1.1));
-        for (let ry = 0; ry < rows; ry++) {
-            for (let cx2 = 0; cx2 < cols; cx2++) {
-                if (Math.random() > 0.4) continue;   // часть окон тёмная
-                const wx = b.x - b.w / 2 + 0.55 + cx2 * 0.9;
-                const wy = 0.9 + ry * 1.1;
-                if (wx > b.x + b.w / 2 - 0.25) continue;
-                const wc = winColors[(Math.random() * winColors.length) | 0];
-                const wm = makeBox(G, 0.34, 0.48, 0.02, wx, wy, b.z - b.d / 2 - 0.005, wc);
-                glow(wm, wc, 0.85);
-            }
-        }
-    }
-
-    return G;
-}
 // ----------------------------------------------------------------
 // Новые декоративные хелперы
 // ----------------------------------------------------------------

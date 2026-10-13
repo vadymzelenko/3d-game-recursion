@@ -33,8 +33,8 @@ export class Player {
   }
 
   update(dt, camera, solids, keys) {
-    const run = keys["ShiftLeft"] || keys["ShiftRight"];
-    const speed = SETTINGS.PLAYER_SPEED * (run ? 1.55 : 1);
+    // Ни бега, ни прыжков: Морозов идёт шагом.
+    const speed = SETTINGS.PLAYER_SPEED;
     let mx = 0, mz = 0;
     if (keys["KeyW"] || keys["ArrowUp"]) mz -= 1;
     if (keys["KeyS"] || keys["ArrowDown"]) mz += 1;
@@ -62,14 +62,9 @@ export class Player {
         this._stepTimer -= dt;
         if (this._stepTimer <= 0) {
           this.game.audio.play("step");
-          this._stepTimer = run ? 0.32 : 0.45;
+          this._stepTimer = 0.5;
         }
       }
-    }
-
-    if (keys["Space"] && this.grounded) {
-      this.velocityY = SETTINGS.JUMP_SPEED;
-      this.grounded = false;
     }
 
     if (!this.grounded) {

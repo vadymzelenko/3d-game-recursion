@@ -404,3 +404,131 @@
   #caption .cap-text { font-size: 17px; }
   .fb-row { flex-wrap: wrap; justify-content: center; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Единая система для всех окон: панели, кнопки, строки статуса.
+   Предметы (щиток, приёмник, магнитофон) сохраняют свой материал,
+   а всё «оформление вокруг» — заголовки, кнопки, подсказки — одно.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --panel-bg: linear-gradient(#221d17, #16120e);
+  --panel-edge: rgba(184, 149, 90, 0.35);
+  --brass: #b8955a;
+}
+
+.pz-panel {
+  position: relative;
+  padding: 26px 30px 28px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-edge);
+  border-radius: 4px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255, 230, 190, 0.06);
+}
+.pz-panel .pz-title { margin-bottom: 20px; }
+
+/* Заголовок окна: всегда Oswald, разрядка, латунь. */
+.pz-title {
+  font-family: var(--f-sans); font-weight: 400; font-size: 13px;
+  letter-spacing: 0.32em; text-transform: uppercase; color: var(--brass);
+}
+
+/* Одна строка статуса для всех головоломок. */
+.pz-status, .rd-sub, .fb-status, .ch-log {
+  min-height: 3em; max-width: 720px; margin: 18px auto 0;
+  font-family: var(--f-serif); font-style: italic; font-size: 18px; line-height: 1.5;
+  color: var(--ink); text-align: center;
+}
+
+/* Одна кнопка для всех окон. */
+.btn, .tp-btn, .ts-b, .st-stamp, .pause-btn, .title-menu button {
+  font-family: var(--f-sans); font-weight: 400; font-size: 14px;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink);
+  background: linear-gradient(#2c261e, #211c16);
+  border: 1px solid rgba(184, 149, 90, 0.4);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.08s;
+}
+.btn:hover, .tp-btn:hover, .ts-b:hover, .st-stamp:hover, .pause-btn:hover, .title-menu button:hover:not(:disabled) {
+  background: linear-gradient(#4a2a1c, #2e1a12); border-color: var(--rust); color: #fff4e0;
+}
+.btn:active, .tp-btn:active, .ts-b:active, .st-stamp:active { transform: translateY(1px); }
+.tp-btn { min-width: 140px; padding: 12px 20px; }
+.tp-btn.play { border-color: rgba(140, 180, 120, 0.55); }
+.ts-b { height: 44px; font-size: 20px; letter-spacing: 0; }
+.st-stamp { padding: 12px 18px; }
+.st-stamp.fired { border-color: #b8221a; }
+.st-stamp.dead { border-color: #2a4ab0; }
+.st-stamp.on { background: linear-gradient(#5a3a22, #3a2416); box-shadow: 0 0 0 2px var(--amber); }
+
+/* Тетрадь — в тон остальному: обложка тёмно-вишнёвый дерматин. */
+.nb-book { background: linear-gradient(135deg, #3a1d18, #2a1410); box-shadow: 0 30px 90px rgba(0,0,0,0.8), inset 6px 0 0 #1e0e0a; }
+.nb-tab { background: #4a2a22; color: #e2cfb8; font-weight: 400; }
+.nb-tab:hover { background: #5a342a; }
+.nb-tab.on { background: #ece4cc; color: #2a2a2a; }
+
+/* Формуляр в шахматах: штамп не перекрывает текст. */
+.ch-card-stamp { top: auto; bottom: 16px; left: 18px; right: auto; }
+
+/* Поиск по полкам. */
+.choice-panel { width: min(680px, 94vw); }
+.choice-note { margin: -8px 0 18px; font-family: var(--f-hand); font-size: 24px; line-height: 1.2; color: #d8c8a4; }
+.choice-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.choice-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 14px 14px 12px; min-height: 76px;
+  background: linear-gradient(#4a3420, #33231a);
+  border: 1px solid rgba(184, 149, 90, 0.3); border-radius: 3px;
+  color: var(--ink); cursor: pointer; text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+.choice-item:hover { border-color: var(--brass); background: linear-gradient(#5a4028, #3a281c); }
+.choice-label {
+  display: inline-block; padding: 2px 8px;
+  font-family: var(--f-sans); font-size: 15px; letter-spacing: 0.08em;
+  color: #241e16; background: #e4d8b8; border-radius: 2px;
+}
+.choice-sub { font-family: var(--f-serif); font-style: italic; font-size: 14px; color: var(--ink-dim); }
+.choice-item.wrong { opacity: 0.5; }
+.choice-item.right { border-color: var(--amber); box-shadow: 0 0 0 2px rgba(232, 176, 74, 0.6); }
+
+/* Кодовый замок. */
+.lock-panel { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.lock-plate {
+  padding: 4px 14px; font-family: var(--f-sans); font-size: 12px; letter-spacing: 0.3em;
+  color: #241e16; background: #c8b890; border-radius: 2px;
+}
+.lock-wheels { display: flex; gap: 14px; }
+.lock-wheel { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.lock-btn { width: 54px; height: 34px; font-size: 18px; letter-spacing: 0; }
+.lock-digit {
+  width: 54px; height: 108px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(#0e0c0a, #2a2620 30%, #3a352c 50%, #2a2620 70%, #0e0c0a);
+  border: 1px solid #5a4a32; border-radius: 4px;
+  font-family: var(--f-mono); color: #e8e0c8;
+}
+.lock-prev, .lock-next { font-size: 20px; opacity: 0.3; line-height: 1.2; }
+.lock-cur { font-size: 38px; line-height: 1.1; }
+.lock-open { padding: 12px 26px; }
+
+@media (max-width: 700px) {
+  .choice-grid { grid-template-columns: repeat(2, 1fr); }
+  .pz-panel { padding: 18px; }
+}
+
+.tp-btn.play { background: linear-gradient(#2c261e, #211c16); border-color: rgba(140, 180, 120, 0.55); }
+.tp-btn.play:hover { background: linear-gradient(#4a2a1c, #2e1a12); }
+
+/* Ползунки в паузе — в общем стиле. */
+.pause-row input[type="range"] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent;
+}
+.pause-row input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: #3a3026; border-radius: 2px; }
+.pause-row input[type="range"]::-moz-range-track { height: 4px; background: #3a3026; border-radius: 2px; }
+.pause-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px;
+  border-radius: 50%; background: var(--brass); border: 2px solid #2a2016;
+}
+.pause-row input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--brass); border: 2px solid #2a2016; }

@@ -9,7 +9,7 @@ import { COLORS } from "../settings.js";
 import { buildApartmentShell, EntryDoor, buildEntryCasing, buildWindowFrame } from "./apartment_layout.js";
 import {
   furnishHall, furnishCorridor, furnishBath, furnishKitchen, rug, frame, curtains, radiator, plantPot,
-  floorLamp, bookshelf, chair, vase, calendar, pictureWall, plantCorner, outsideView, wallClock, furnishLights,
+  floorLamp, bookshelf, chair, vase, calendar, pictureWall, plantCorner, wallClock, furnishLights,
 } from "./decor.js";
 import { decal, FONTS } from "./text.js";
 
@@ -63,7 +63,6 @@ export class ApartmentScene extends Scene {
 
     for (const w of shell.windows) {
       buildWindowFrame(R, w);
-      outsideView(R, w);
     }
 
     // Свет — только от настоящих светильников.
@@ -245,7 +244,6 @@ export class ApartmentScene extends Scene {
         "Она стоит. 04:12. Сегодня — 14 ноября 1988 года.",
       ]);
       gm.state.learn("date");
-      gm.state.set("looked_home");
     });
 
     // Шкаф

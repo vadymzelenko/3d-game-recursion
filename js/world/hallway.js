@@ -172,7 +172,15 @@ export class HallwayScene extends Scene {
     const east = makeBox(R, WALL_T, FLOOR_H, 2 * HZ, X_EAST + WALL_T / 2, cy, 0, COLORS.WALL);
     this.solids.push(aabb(east));
     // Панель масляной краской — до 1.4 м, как в каждом советском подъезде.
-    makeBox(R, 0.01, 1.4, 2 * HZ, LANDING_X0 + 0.005, y + 0.7, 0, 0x3e4a44).userData.noPick = true;
+    // На этаже с дверью 44 панель обходит дверной проём.
+    const panel = (z0, z1) => {
+      if (z1 - z0 < 0.01) return;
+      makeBox(R, 0.01, 1.4, z1 - z0, LANDING_X0 + 0.005, y + 0.7, (z0 + z1) / 2, 0x3e4a44).userData.noPick = true;
+    };
+    if (wrapIdx(i) === WEST_FLOOR) {
+      panel(-HZ, WEST_Z - DOOR_W / 2 - 0.06);
+      panel(WEST_Z + DOOR_W / 2 + 0.06, HZ);
+    } else panel(-HZ, HZ);
 
     const x0 = LANDING_X0 - WALL_T;
     const x1 = X_EAST + WALL_T;

@@ -49,7 +49,7 @@ export class PauseMenu extends Overlay {
     }, "danger");
 
     box.append(h("div", "pause-keys",
-      "WASD — ход · Shift — быстрее · E — действие · Tab — тетрадь · Esc — пауза\nИгра сохраняется сама."));
+      "WASD — ход · E — действие · Tab — тетрадь · Esc — пауза\nИгра сохраняется сама."));
     this.el.append(box);
   }
 
