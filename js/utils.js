@@ -1,7 +1,6 @@
 // Утилиты: построение геометрии и материалов.
 
 import * as THREE from "three";
-import { COLORS } from "./settings.js";
 
 // Кэш геометрий (одна BoxGeometry на каждый уникальный размер).
 const _boxGeoCache = new Map();
@@ -23,6 +22,9 @@ function getMat(color) {
   }
   return _matCache.get(color);
 }
+
+// Все общие материалы (для эффектов распада мира).
+export function cachedMaterials() { return _matCache; }
 
 export function makeBox(parent, w, h, d, x, y, z, color, opts = {}) {
   const mat = opts.unique ? new THREE.MeshLambertMaterial({ color }) : getMat(color);
@@ -61,44 +63,6 @@ export function solidBox(parent, solids, w, h, d, x, y, z, color) {
   return m;
 }
 
-export function makeTextSprite(text, opts = {}) {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  const fontSize = opts.fontSize || 48;
-  ctx.font = `${fontSize}px "Courier New", monospace`;
-  const metrics = ctx.measureText(text);
-  const w = Math.ceil(metrics.width) + 20;
-  const h = fontSize + 20;
-
-  canvas.width = w;
-  canvas.height = h;
-
-  ctx.font = `${fontSize}px "Courier New", monospace`;
-  ctx.fillStyle = opts.bg || "rgba(0,0,0,0)";
-  ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = opts.color || "#d8d4b8";
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "center";
-  ctx.fillText(text, w / 2, h / 2);
-
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.minFilter = THREE.LinearFilter;
-  const mat = new THREE.MeshBasicMaterial({
-    map: tex,
-    transparent: true,
-    depthWrite: false,
-    alphaTest: 0.02,
-    polygonOffset: true,
-    polygonOffsetFactor: -4,
-    polygonOffsetUnits: -4,
-  });
-  const geo = new THREE.PlaneGeometry(w / 200, h / 200);
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.renderOrder = 5;
-  mesh.userData.noPick = true;   // надпись не перекрывает луч взаимодействия
-  return mesh;
-}
-
 // AABB { min:[x,y,z], max:[x,y,z] } для BoxGeometry-меша.
 export function aabb(mesh) {
   const p = mesh.position;
@@ -109,97 +73,31 @@ export function aabb(mesh) {
   };
 }
 
-// Универсальная комната (используется редко, основные сцены строят вручную).
-export function buildRoom(parent, opts, solids) {
-  const {
-    width, depth, height,
-    wallColor, floorColor, ceilColor,
-    doorSide = null, doorWidth = 1.1, doorHeight = 2.1, doorOffset = 0,
-    windowSide = null, windowWidth = 2.4, windowHeight = 1.6,
-    windowSillY = 1.0, windowOffset = 0,
-    floorHole = null,
-  } = opts;
-
-  const t = 0.2;
-
-  if (floorHole) {
-    const halfW = width / 2, halfD = depth / 2;
-    const hMinX = floorHole.x - floorHole.width / 2;
-    const hMaxX = floorHole.x + floorHole.width / 2;
-    const hMinZ = floorHole.z - floorHole.depth / 2;
-    const hMaxZ = floorHole.z + floorHole.depth / 2;
-
-    const addFloorSeg = (minX, maxX, minZ, maxZ) => {
-      const w = maxX - minX, d = maxZ - minZ;
-      if (w <= 0.01 || d <= 0.01) return;
-      const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
-      const m = makeBox(parent, w, t, d, cx, -t / 2, cz, floorColor);
-      solids.push(aabb(m));
-    };
-
-    addFloorSeg(-halfW, hMinX, -halfD, halfD);
-    addFloorSeg(hMaxX, halfW, -halfD, halfD);
-    addFloorSeg(hMinX, hMaxX, -halfD, hMinZ);
-    addFloorSeg(hMinX, hMaxX, hMaxZ, halfD);
-  } else {
-    const floor = makeBox(parent, width, t, depth, 0, -t / 2, 0, floorColor);
-    solids.push(aabb(floor));
-  }
-
-  const ceil = makeBox(parent, width, t, depth, 0, height + t / 2, 0, ceilColor);
-  solids.push(aabb(ceil));
-
-  const walls = [
-    { side: "north", along:  depth / 2, axis: "x", len: width },
-    { side: "south", along: -depth / 2, axis: "x", len: width },
-    { side: "east",  along:  width / 2, axis: "z", len: depth },
-    { side: "west",  along: -width / 2, axis: "z", len: depth },
-  ];
-
-  for (const w of walls) {
-    const isDoor = w.side === doorSide;
-    const isWindow = w.side === windowSide;
-
-    if (!isDoor && !isWindow) {
-      let m;
-      if (w.axis === "x") {
-        m = makeBox(parent, w.len, height, t, 0, height / 2, w.along, wallColor);
-      } else {
-        m = makeBox(parent, t, height, w.len, w.along, height / 2, 0, wallColor);
-      }
-      solids.push(aabb(m));
-      continue;
-    }
-
-    const openings = [];
-    if (isDoor)   openings.push({ offset: doorOffset,   width: doorWidth,   bottom: 0,           top: doorHeight });
-    if (isWindow) openings.push({ offset: windowOffset, width: windowWidth, bottom: windowSillY, top: windowSillY + windowHeight });
-
-    const half = w.len / 2;
-    const mk = (localCenter, localLen, yCenter, h) => {
-      if (localLen <= 0.01 || h <= 0.01) return;
-      let m;
-      if (w.axis === "x") {
-        m = makeBox(parent, localLen, h, t, localCenter, yCenter, w.along, wallColor);
-      } else {
-        m = makeBox(parent, t, h, localLen, w.along, yCenter, localCenter, wallColor);
-      }
-      solids.push(aabb(m));
-    };
-
-    const op = openings[0];
-    const a0 = op.offset - op.width / 2;
-    const a1 = op.offset + op.width / 2;
-
-    const leftLen = a0 + half;
-    if (leftLen > 0.01) mk(-half + leftLen / 2, leftLen, height / 2, height);
-
-    const rightLen = half - a1;
-    if (rightLen > 0.01) mk(a1 + rightLen / 2, rightLen, height / 2, height);
-
-    if (op.bottom > 0.01) mk(op.offset, op.width, op.bottom / 2, op.bottom);
-
-    const topH = height - op.top;
-    if (topH > 0.01) mk(op.offset, op.width, op.top + topH / 2, topH);
-  }
+// Плоская панель с текстурой, нарисованной на canvas (экраны, доски, карты).
+// draw(ctx, w, h) рисует содержимое; возвращается меш, у которого в
+// userData.redraw() можно перерисовать текстуру.
+export function makePanel(parent, w, h, pxW, pxH, draw, { emissive = 0, basic = false } = {}) {
+  const cv = document.createElement("canvas");
+  cv.width = pxW; cv.height = pxH;
+  const ctx = cv.getContext("2d");
+  draw(ctx, pxW, pxH);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  const mat = basic
+    ? new THREE.MeshBasicMaterial({ map: tex })
+    : new THREE.MeshLambertMaterial({
+        map: tex,
+        emissive: emissive ? new THREE.Color(0xffffff) : new THREE.Color(0),
+        emissiveMap: emissive ? tex : null,
+        emissiveIntensity: emissive,
+      });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  mesh.userData.redraw = (fn = draw) => { ctx.clearRect(0, 0, pxW, pxH); fn(ctx, pxW, pxH); tex.needsUpdate = true; };
+  mesh.userData.ctx = ctx;
+  parent.add(mesh);
+  return mesh;
 }
+
+// Поворот «лицом» в сторону света: n — смотрит на +z, s — на −z, e — на +x, w — на −x.
+export const FACE_ROT = { n: 0, s: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 };

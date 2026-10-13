@@ -14,7 +14,25 @@ export class Scene {
     this._built = false;
     this.region = null;
     this.doors = [];   // входные двери (EntryDoor) — обновляются в updateDoors
+    this._lightDefs = [];
   }
+
+  // Якорь света в локальных координатах сцены. В мир он попадает после
+  // place() — см. registerLights().
+  light(x, y, z, opts = {}) { this._lightDefs.push({ x, y, z, opts }); }
+
+  registerLights(pool) {
+    this.group.updateMatrixWorld(true);
+    for (const d of this._lightDefs) {
+      const pos = new THREE.Vector3(d.x, d.y, d.z);
+      this.group.localToWorld(pos);
+      pool.add({ pos, ...d.opts });
+    }
+  }
+
+  // Привести внешний вид сцены в соответствие с состоянием сюжета.
+  // Вызывается после постройки и после каждого изменения флагов.
+  sync() {}
 
   build() { /* override */ }
 
@@ -68,6 +86,9 @@ export class Scene {
 
   activate() { this.group.visible = true; }
   deactivate() { this.group.visible = false; }
+
+  // Этаж (мировая высота пола) — для отсечения невидимых квартир.
+  get floorY() { return this.group.position.y; }
 
   onEnter() { /* override */ }
   onExit() { /* override */ }

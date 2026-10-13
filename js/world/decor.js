@@ -1,7 +1,8 @@
 // Декор и типовая меблировка.
 
 import * as THREE from "three";
-import { makeBox, makeHitbox, solidBox, glow, makeTextSprite } from "../utils.js";
+import { makeBox, solidBox, glow, makePanel } from "../utils.js";
+import { decal, FONTS } from "./text.js";
 import { Interactable } from "../interactable.js";
 import { COLORS } from "../settings.js";
 
@@ -139,24 +140,62 @@ export function frame(R, x, y, z, face, w, h, art = "landscape", onLook = null) 
     return G;
 }
 
+// Часы всегда показывают 04:12. Это первое правило.
 export function wallClock(R, x, y, z, face, { r = 0.17, time = "04:12" } = {}) {
     const G = wallGroup(R, x, y, z, face);
     makeBox(G, r * 2, r * 2, 0.04, 0, 0, 0.02, 0x2a2622);
-    makeBox(G, r * 1.7, r * 1.7, 0.02, 0, 0, 0.045, 0xd0c8b0);
-    makeBox(G, 0.014, r * 0.7, 0.012, 0, r * 0.3, 0.06, 0x1a1a1a);
-    const h2 = makeBox(G, 0.014, r * 0.5, 0.012, -r * 0.2, -r * 0.05, 0.062, 0x1a1a1a);
-    h2.rotation.z = -1.1;
+    makePanel(G, r * 1.76, r * 1.76, 256, 256, (c, w, h) => {
+        c.fillStyle = "#d6cfb6"; c.fillRect(0, 0, w, h);
+        c.fillStyle = "#1c1a18";
+        c.font = `600 34px ${FONTS.sans}`;
+        c.textAlign = "center"; c.textBaseline = "middle";
+        for (let i = 1; i <= 12; i++) {
+            const a = i / 12 * Math.PI * 2;
+            c.fillText(String(i), w / 2 + Math.sin(a) * w * 0.38, h / 2 - Math.cos(a) * h * 0.38);
+        }
+        c.font = `400 16px ${FONTS.sans}`;
+        c.fillText("СДЕЛАНО В СССР", w / 2, h * 0.68);
+    }).position.z = 0.042;
+    let hh = 4, mm = 12;
+    const m = /^(\d\d):(\d\d)$/.exec(time);
+    if (m) { hh = +m[1]; mm = +m[2]; }
+    const hand = (len, wdt, ang, zz) => {
+        const P = new THREE.Group();
+        P.position.z = zz;
+        P.rotation.z = -ang;
+        G.add(P);
+        makeBox(P, wdt, len, 0.008, 0, len / 2 - 0.02, 0, 0x141414);
+        return P;
+    };
+    hand(r * 0.55, 0.018, ((hh % 12) + mm / 60) / 12 * Math.PI * 2, 0.05);
+    hand(r * 0.78, 0.012, mm / 60 * Math.PI * 2, 0.056);
+    G.userData.secondHand = hand(r * 0.8, 0.004, 0.37, 0.062);
     return G;
 }
 
 export function calendar(R, x, y, z, face) {
     const G = wallGroup(R, x, y, z, face);
-    makeBox(G, 0.26, 0.38, 0.01, 0, 0, 0.005, 0xd8d0b8);
-    makeBox(G, 0.26, 0.1, 0.012, 0, 0.14, 0.006, 0xa82a22);
-    const t = makeTextSprite("1988", { fontSize: 36, color: "#f0e8d0" });
-    t.scale.setScalar(0.3);
-    t.position.set(0, 0.14, 0.014);
-    G.add(t);
+    makePanel(G, 0.26, 0.38, 208, 304, (c, w, h) => {
+        c.fillStyle = "#e2dac2"; c.fillRect(0, 0, w, h);
+        c.fillStyle = "#a82a22"; c.fillRect(0, 0, w, 72);
+        c.fillStyle = "#f0e8d0"; c.textAlign = "center"; c.textBaseline = "middle";
+        c.font = `600 40px ${FONTS.sans}`; c.fillText("1988", w / 2, 30);
+        c.font = `400 18px ${FONTS.sans}`; c.fillText("НОЯБРЬ", w / 2, 58);
+        c.fillStyle = "#2a2622"; c.font = `400 17px ${FONTS.sans}`;
+        // 1 ноября 1988 — вторник
+        for (let d = 1; d <= 30; d++) {
+            const idx = d + 0;
+            const col = idx % 7, row = Math.floor(idx / 7);
+            const cx = 18 + col * 28, cy = 100 + row * 36;
+            c.fillStyle = col >= 5 ? "#a82a22" : "#2a2622";
+            c.fillText(String(d), cx, cy);
+            if (d === 14) {
+                c.strokeStyle = "#a82a22"; c.lineWidth = 3;
+                c.beginPath(); c.ellipse(cx, cy, 14, 12, 0.2, 0, Math.PI * 2); c.stroke();
+            }
+            if (d > 14) { c.strokeStyle = "rgba(40,40,40,0.0)"; }
+        }
+    }).position.z = 0.006;
     return G;
 }
 
@@ -607,10 +646,7 @@ export function furnishKitchen(R, solids, { hw, cw, hasWindow = true }) {
         makeBox(R, 0.01, 0.02, fD - 0.04, fx - fW / 2 - 0.005, 1.1, fz, 0x707070),
         makeBox(R, 0.04, 0.4, 0.04, fx - fW / 2 - 0.02, 1.45, fz + 0.24, 0x707070),
         makeBox(R, 0.04, 0.4, 0.04, fx - fW / 2 - 0.02, 0.8, fz + 0.24, 0x707070)];
-    const lbl = makeTextSprite("МИНСК", { fontSize: 32, color: "#606060" });
-    lbl.position.set(fx - fW / 2 - 0.013, 1.62, fz);
-    lbl.rotation.y = -Math.PI / 2;
-    R.add(lbl);
+    decal(R, "Минск", { x: fx - fW / 2 - 0.006, y: 1.6, z: fz, face: "w", width: 0.26, style: "label", color: "rgba(150,150,150,0.95)" });
 
     // ── секции гарнитура ──────────────────────────────────────────
     // ВАЖНО: zA0 сдвинут на -0.15, чтобы тумба с мойкой НЕ начиналась
@@ -648,7 +684,6 @@ export function furnishKitchen(R, solids, { hw, cw, hasWindow = true }) {
     // вытяжка — строго над плитой
     makeBox(R, 0.4, 0.14, 0.55, x1 - 0.2, 1.62, stoveZ, 0x9a9a90);
     makeBox(R, 0.14, 1.11, 0.14, x1 - 0.1, 2.245, stoveZ, 0x9a9a90);
-
 
     // Верхний шкафчик — СТОИТ на холодильнике (раньше висел рядом).
     // Холодильник: центр (fx, fz), верх на y = 1.7. Шкафчик — чуть уже и

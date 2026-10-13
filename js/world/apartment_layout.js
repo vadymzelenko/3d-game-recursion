@@ -2,9 +2,10 @@
 // Используется и квартирой №42 (узкая прихожая), и всеми соседями.
 
 import * as THREE from "three";
-import { makeBox, aabb, makeTextSprite } from "../utils.js";
+import { makeBox, aabb } from "../utils.js";
 import { Interactable } from "../interactable.js";
 import { COLORS } from "../settings.js";
+import { plate } from "./text.js";
 
 export const WALL_H = 2.8;
 export const WALL_T = 0.2;
@@ -29,6 +30,9 @@ export function buildApartmentShell(R, solids, opts = {}) {
     const ceilColor      = opts.ceilColor      ?? COLORS.CEIL;
     const floorOverrides = opts.floorOverrides ?? {};
     const sharedEast     = !!opts.sharedEast;
+    const mainRoomName   = opts.mainRoomName   ?? "Комната";
+    const balcony        = !!opts.balcony;
+    const blindNorth     = !!opts.blindNorth;
 
     const hw  = apartmentWidth / 2;
     const hhw = hallWidth / 2;
@@ -40,7 +44,7 @@ export function buildApartmentShell(R, solids, opts = {}) {
         { id: "corr",    name: "Коридор",  x0: -cw,  x1: cw,  z0: HALL_Z1, z1: BED_Z0,  floor: COLORS.FLOOR },
         { id: "bath",    name: "Ванная",   x0: -hw,  x1: -cw, z0: HALL_Z1, z1: BED_Z0,  floor: 0x68706a },
         { id: "kitchen", name: "Кухня",    x0: cw,   x1: hw,  z0: HALL_Z1, z1: BED_Z0,  floor: 0x4a4a3e },
-        { id: "bedroom", name: "Спальня",  x0: -hw,  x1: hw,  z0: BED_Z0,  z1: NORTH_Z, floor: COLORS.FLOOR },
+        { id: "bedroom", name: mainRoomName,  x0: -hw,  x1: hw,  z0: BED_Z0,  z1: NORTH_Z, floor: COLORS.FLOOR },
     ];
 
     for (const r of rooms) {
@@ -84,7 +88,17 @@ export function buildApartmentShell(R, solids, opts = {}) {
     wall("x", entryZ,  hIn, hOut, [{ c: 0, w: 1.1 }]);
     wall("x", HALL_Z1, xIn, xOut, [{ c: 0, w: corrGap, casing: true }]);
     wall("x", BED_Z0,  xIn, xOut, [{ c: 0, w: 1.1, casing: true }]);
-    wall("x", NORTH_Z, xIn, xOut, [{ c: 0.3, w: winW, bottom: 1.0, top: 2.6 }]);
+    if (balcony) {
+        // Балконная дверь вместо окна + узкое окно рядом.
+        wall("x", NORTH_Z, xIn, xOut, [
+            { c: -0.2, w: 0.9, casing: true },
+            { c: 1.1, w: 1.0, bottom: 1.0, top: 2.4 },
+        ]);
+    } else if (blindNorth) {
+        wall("x", NORTH_Z, xIn, xOut);
+    } else {
+        wall("x", NORTH_Z, xIn, xOut, [{ c: 0.3, w: winW, bottom: 1.0, top: 2.6 }]);
+    }
 
     const zA = entryZ + T2, zB = HALL_Z1 - T2;
     wall("z", -hhw, zA, zB);
@@ -102,14 +116,15 @@ export function buildApartmentShell(R, solids, opts = {}) {
         wall("z", hw, BED_Z0 + T2, zN);
     }
 
-    const windows = [
-        { x: 0.3, z: NORTH_Z, rotY: 0, w: winW, h: 1.6, sillY: 1.0 },
-    ];
+    const windows = balcony
+        ? [{ x: 1.1, z: NORTH_Z, rotY: 0, w: 1.0, h: 1.4, sillY: 1.0, noView: true }]
+        : blindNorth ? []
+        : [{ x: 0.3, z: NORTH_Z, rotY: 0, w: winW, h: 1.6, sillY: 1.0 }];
     if (!sharedEast) windows.push({ x: hw, z: 0.9, rotY: Math.PI / 2, w: winKitW, h: 1.4, sillY: 1.0 });
 
     const region = {
         x0: -hw,          x1:  hw,
-        z0: entryZ - 0.2, z1: zN,
+        z0: entryZ - 0.2, z1: balcony ? NORTH_Z + 1.6 : zN,
         y0: 0,            y1: WALL_H,
     };
 
@@ -156,14 +171,20 @@ export function buildEntryCasing(R, { entryZ, doorW = 1.1, doorH = DOOR_H }) {
 
 const DOOR_MAX_ANGLE = Math.PI * 0.55;
 const DOOR_DURATION  = 0.5;
+const AJAR_ANGLE     = 0.22;
 
+// Входная дверь квартиры. Может быть заперта (locked() возвращает текст
+// отказа) и приоткрыта с самого начала (ajar).
 export class EntryDoor {
-    constructor(scene, R, { entryZ, doorW = 1.1, doorH = DOOR_H, label = "", onFirstOpen = null }) {
+    constructor(scene, R, { entryZ, doorW = 1.1, doorH = DOOR_H, label = "", onFirstOpen = null, locked = null, ajar = null }) {
         this.scene = scene;
         this.game = scene.game;
         this.entryZ = entryZ;
         this.doorW = doorW;
+        this.label = label;
         this.onFirstOpen = onFirstOpen;
+        this.locked = locked;     // () => null | "сообщение"
+        this.ajar = ajar;         // () => bool
         this.target = 0;
         this.angle = 0;
         this._opened = false;
@@ -182,22 +203,14 @@ export class EntryDoor {
             parts.push(makeBox(pivot, leafW * 0.66, leafH * 0.20, 0.02, leafW / 2, y0 + 0.58, s * 0.045, 0x4a2f1e));
             parts.push(makeBox(pivot, 0.05, 0.10, 0.06, leafW - 0.08, y0 + 1.03, s * 0.07, 0x8a8060));
         }
-        parts.push(makeBox(pivot, 0.03, 0.03, 0.1, leafW / 2, y0 + 1.60, 0, 0x202020));
+        // глазок
+        this.peephole = makeBox(pivot, 0.035, 0.035, 0.1, leafW / 2, y0 + 1.60, 0, 0x202020);
+        parts.push(this.peephole);
         if (label) {
-            const tag = makeTextSprite(label, { fontSize: 48, color: "#c8c8b4" });
-            tag.scale.setScalar(0.45);
-            tag.position.set(leafW / 2, y0 + 1.82, -0.07);
-            tag.rotation.y = Math.PI;
-            pivot.add(tag);
+            plate(pivot, label, { x: leafW / 2, y: y0 + 1.83, z: -0.052, face: "s", w: 0.16, h: 0.11, bg: "#2b2b2b", fg: "#d8cfa8", border: "#8a7a50" });
         }
 
-        // ─── ПОРОГ-МОСТ ─────────────────────────────────────────────
-        // Пол квартиры заканчивается на entryZ, пол подъезда — на HZ.
-        // Между ними щель ~0.3 м. Кладём тонкую плиту ровно под проёмом,
-        // чтобы игрок мог перейти без провала.
-
-        // Порог: чуть приподнят (y_top=0.008) и другого цвета — иначе он
-// z-fighting'ил с полом квартиры/подъезда и давал «глитч-текстуры».
+        // Порог: щель между полом квартиры и подъезда.
         const threshold = makeBox(R, doorW + 0.9, FLOOR_T, 0.7, 0, -FLOOR_T / 2 + 0.008, entryZ, 0x3a3028);
         threshold.userData.noPick = true;
         scene.solids.push(aabb(threshold));
@@ -209,11 +222,19 @@ export class EntryDoor {
         };
         scene.solids.push(this.solid);
 
-        this.interactable = new Interactable(parts, "Открыть входную дверь", () => this.toggle());
+        this.interactable = new Interactable(parts, "", () => this.toggle());
+        this.interactable.getPrompt = () => this._prompt();
         scene.doors.push(this);
     }
 
     get isOpen() { return this.target === 1; }
+
+    _prompt() {
+        const n = this.label ? `кв. ${this.label}` : "";
+        if (this.target === 1) return `Закрыть дверь ${n}`.trim();
+        if (this.locked && this.locked()) return `Дверь ${n} — заперто`.trim();
+        return `Открыть дверь ${n}`.trim();
+    }
 
     _playerInDoorway() {
         const l = this.scene.toLocal(this.game.player.position);
@@ -224,48 +245,51 @@ export class EntryDoor {
         const gm = this.game;
         if (this.target === 1) {
             if (this._playerInDoorway()) {
-                gm.hud.showMessage("Что-то мешает закрыть дверь — ты стоишь в проёме.", 2500);
+                gm.hud.say("Не закрыть — я стою в проёме.");
                 return;
             }
             this.target = 0;
             gm.audio.play("door");
-            this.interactable.prompt = "Открыть входную дверь";
+            return;
+        }
+        const refusal = this.locked && this.locked();
+        if (refusal) {
+            gm.audio.play("locked");
+            gm.hud.say(refusal);
             return;
         }
         this.target = 1;
         this.solid.off = true;
         gm.audio.play("door");
-        this.interactable.prompt = "Закрыть входную дверь";
         if (!this._opened) {
             this._opened = true;
-            if (this.onFirstOpen) this.onFirstOpen();
+            this.onFirstOpen?.();
         }
     }
 
     update(dt) {
-        const goal = this.target ? DOOR_MAX_ANGLE : 0;
+        const rest = (this.ajar && this.ajar() && !(this.locked && this.locked())) ? AJAR_ANGLE : 0;
+        const goal = this.target ? DOOR_MAX_ANGLE : rest;
         const diff = goal - this.angle;
         if (Math.abs(diff) < 1e-5) return;
         const step = (dt / DOOR_DURATION) * DOOR_MAX_ANGLE;
         this.angle += Math.sign(diff) * Math.min(Math.abs(diff), step);
         this.pivot.rotation.y = -this.angle;
-        if (this.target === 0 && this.angle <= 1e-5) {
-            this.angle = 0;
-            this.pivot.rotation.y = 0;
+        if (this.target === 0 && Math.abs(this.angle - rest) <= 1e-5) {
+            this.angle = rest;
             if (this._playerInDoorway()) {
                 this.target = 1;
-                this.interactable.prompt = "Закрыть входную дверь";
             } else {
                 this.solid.off = false;
             }
         }
     }
 
+    // Мгновенно закрыть (при пробуждении в кровати, смене витка).
     reset() {
         this.target = 0;
         this.angle = 0;
         this.pivot.rotation.y = 0;
         this.solid.off = false;
-        this.interactable.prompt = "Открыть входную дверь";
     }
 }

@@ -1,0 +1,110 @@
+/* ═══ ЭВМ «Искра-1030»: полноэкранный кинескоп ═══ */
+
+#terminal {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center;
+  background: radial-gradient(ellipse at center, #1a1814, #050504);
+  user-select: text;
+}
+
+.crt {
+  width: min(1100px, 96vw); height: min(780px, 94vh);
+  display: flex; flex-direction: column;
+  padding: 26px 30px 12px;
+  background: linear-gradient(#cfc8b4, #b4ac96);
+  border-radius: 22px;
+  box-shadow: 0 40px 120px rgba(0,0,0,0.8), inset 0 2px 0 rgba(255,255,255,0.4), inset 0 -6px 12px rgba(0,0,0,0.25);
+}
+
+.crt-screen {
+  position: relative; flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  padding: 18px 26px;
+  background: radial-gradient(ellipse at center, #06200f 0%, #031009 70%, #020805 100%);
+  border-radius: 28px / 22px;
+  box-shadow: inset 0 0 40px rgba(0,0,0,0.9), inset 0 0 6px rgba(125,255,154,0.25), 0 0 0 10px #2a2822;
+  overflow: hidden;
+  font-family: var(--f-mono);
+  font-size: clamp(13px, 1.45vw, 17px);
+  line-height: 1.5;
+  color: var(--phosphor);
+  text-shadow: 0 0 5px rgba(125, 255, 154, 0.55);
+  animation: crtflicker 0.12s infinite;
+}
+/* Сканлайны и блик стекла */
+.crt-screen::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  background: repeating-linear-gradient(rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.22) 2px 3px);
+}
+.crt-screen::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
+  background: radial-gradient(ellipse at 30% 15%, rgba(255,255,255,0.07), transparent 45%);
+}
+@keyframes crtflicker { 0% { opacity: 0.985; } 50% { opacity: 1; } 100% { opacity: 0.99; } }
+
+.crt-screen.decay { animation: crtdecay 3s infinite; }
+@keyframes crtdecay {
+  0%, 88%, 100% { filter: none; transform: none; }
+  90% { filter: hue-rotate(40deg) contrast(1.4); transform: translateX(2px) skewX(-1deg); }
+  92% { filter: none; transform: translateX(-3px); }
+}
+
+.crt-head {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding-bottom: 8px; margin-bottom: 8px;
+  border-bottom: 1px solid rgba(125, 255, 154, 0.3);
+  font-size: 0.82em; letter-spacing: 0.08em; opacity: 0.8;
+}
+.crt-mode { color: var(--amber); text-shadow: 0 0 5px rgba(255, 196, 106, 0.5); }
+
+.crt-out { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: rgba(125,255,154,0.3) transparent; }
+.crt-out .ln { white-space: pre-wrap; word-break: break-word; min-height: 1.5em; }
+.ln.dim { opacity: 0.55; }
+.ln.err { color: #ff8a6a; text-shadow: 0 0 5px rgba(255, 120, 90, 0.5); }
+.ln.warn, .ln.alert { color: var(--amber); text-shadow: 0 0 5px rgba(255, 196, 106, 0.5); }
+.ln.alert { animation: blink 1s steps(1) 4; }
+.ln.ok { color: #c8ffd8; }
+.ln.dir { color: #b8ffcf; }
+.ln.me {
+  font-family: var(--f-serif); font-style: italic; font-size: 1.05em;
+  color: #e8e0c8; text-shadow: none; opacity: 0.9; padding: 2px 0;
+}
+.ln.voice { color: #f0e2b8; text-shadow: 0 0 6px rgba(255, 220, 160, 0.5); }
+.ln.hex { color: #9fffb8; letter-spacing: 0.02em; }
+.ln.dossier { color: #e8fff0; }
+.ln.net-title { color: #c8ffd8; margin-top: 4px; }
+.ln.net { padding-left: 2ch; }
+.ln.net-link { color: #b8ffcf; }
+.ln.ext a {
+  color: var(--amber); text-decoration: underline; text-underline-offset: 3px; word-break: break-all;
+}
+.ln.ext a:hover { color: #fff; }
+
+.crt-line { display: flex; align-items: baseline; padding-top: 4px; }
+.crt-prompt { white-space: pre; }
+.crt-in {
+  flex: 1; min-width: 0;
+  font: inherit; color: inherit; text-shadow: inherit;
+  background: transparent; border: none; outline: none;
+  caret-color: var(--phosphor);
+}
+.crt-edit {
+  flex: 1; resize: none;
+  font: inherit; color: inherit; text-shadow: inherit;
+  background: rgba(0, 30, 12, 0.5); border: 1px solid rgba(125, 255, 154, 0.3);
+  padding: 10px; outline: none;
+}
+
+.crt-bezel {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 10px;
+  font-family: var(--f-sans); color: #4a4436;
+}
+.crt-brand { font-size: 18px; font-weight: 600; letter-spacing: 0.4em; }
+.crt-hint { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; }
+.crt-led { width: 10px; height: 10px; border-radius: 50%; background: #3aff6a; box-shadow: 0 0 8px #3aff6a; }
+
+@media (max-width: 700px) {
+  .crt { padding: 10px 10px 6px; border-radius: 12px; }
+  .crt-screen { padding: 10px 12px; }
+}

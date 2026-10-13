@@ -3,10 +3,10 @@
 
 import * as THREE from "three";
 import { Scene } from "../scene.js";
-import { makeBox, aabb, makeTextSprite } from "../utils.js";
+import { makeBox, aabb, glow } from "../utils.js";
 import { Interactable } from "../interactable.js";
 import { COLORS } from "../settings.js";
-import { NOTE_FUSEBOX } from "../data/notes.js";
+import { decal, plate } from "./text.js";
 
 const FLOOR_H = 3.0;
 const SLAB_T  = 0.3;
@@ -32,6 +32,9 @@ const LANE_B_Z = +(DIV_T / 2 + LANE_W / 2);
 
 const NUM_FLOORS  = 4;
 const SPAWN_FLOOR = 2;
+// Подписи этажей. Дом замкнут: под вторым этажом снова пятый,
+// над пятым — снова второй. Квартира 42 — на пятом.
+const FLOOR_LABELS = ["3", "4", "5", "2"];
 const LOOP_H      = NUM_FLOORS * FLOOR_H;
 
 const FIRST_FLOOR = -2;
@@ -93,7 +96,7 @@ const COL_CASING = 0x3e3328;
 export class HallwayScene extends Scene {
   constructor(game) {
     super(game);
-    this.name = "Лестничная клетка";
+    this.name = "Подъезд";
     this.spawn = [-1.0, SPAWN_FLOOR * FLOOR_H + 1.7, -0.2];
     this.spawnYaw = Math.PI;
   }
@@ -101,8 +104,6 @@ export class HallwayScene extends Scene {
   build() {
     const R = this.group;
     this.game.scene.add(R);
-
-    R.add(new THREE.AmbientLight(0x807565, 0.45));
 
     for (let i = FIRST_FLOOR; i <= LAST_FLOOR + 1; i++) this._buildSlab(R, i * FLOOR_H);
     for (let i = FIRST_FLOOR; i <= LAST_FLOOR; i++) {
@@ -113,9 +114,8 @@ export class HallwayScene extends Scene {
       this._buildFloorNumber(R, i, y);
     }
     for (let i = FIRST_FLOOR - 1; i <= LAST_FLOOR; i++) this._buildMarch(R, i * FLOOR_H);
-    this._buildInteractables(R);
+    this._buildFusebox(R);
 
-    // Регион подъезда — вся площадка + лестница.
     this.region = {
       x0: LANDING_X0,
       x1: X_EAST + WALL_T,
@@ -138,6 +138,8 @@ export class HallwayScene extends Scene {
     this.solids.push(aabb(west));
     const east = makeBox(R, WALL_T, FLOOR_H, 2 * HZ, X_EAST + WALL_T / 2, cy, 0, COLORS.WALL);
     this.solids.push(aabb(east));
+    // Панель масляной краской — до 1.4 м, как в каждом советском подъезде.
+    makeBox(R, 0.01, 1.4, 2 * HZ, LANDING_X0 + 0.005, y + 0.7, 0, 0x3e4a44).userData.noPick = true;
 
     const x0 = LANDING_X0 - WALL_T;
     const x1 = X_EAST + WALL_T;
@@ -165,6 +167,9 @@ export class HallwayScene extends Scene {
   _buildDoors(R, i, y) {
     const gm = this.game;
     const plan = FLOOR_PLAN[wrapIdx(i)];
+    // Этажи-«копии» сверху и снизу видны только в пролёт лестницы:
+    // за их дверьми нет квартир, поэтому все створки там закрыты.
+    const real = i >= 0 && i < NUM_FLOORS;
 
     for (const d of DOORS) {
       const info = plan[d.idx];
@@ -173,7 +178,6 @@ export class HallwayScene extends Scene {
       const zc = s * (HZ + WALL_T / 2);
       const zIn = s * HZ;
 
-      // Наличник
       const casingD = WALL_T + 0.04;
       for (const sx of [-1, 1]) {
         makeBox(R, 0.06, DOOR_H - 0.06, casingD,
@@ -181,42 +185,41 @@ export class HallwayScene extends Scene {
       }
       makeBox(R, DOOR_W, 0.06, casingD, d.x, y + DOOR_H - 0.03, zc, COL_CASING);
 
-      // Табличка
-      makeBox(R, 0.36, 0.3, 0.02, d.x, y + DOOR_H + 0.28, zIn + toward * 0.01, 0x2a2820);
-      const tag = makeTextSprite(info.num, { fontSize: 56, color: "#c8c8b4" });
-      tag.scale.setScalar(0.7);
-      tag.position.set(d.x, y + DOOR_H + 0.28, zIn + toward * 0.03);
-      tag.rotation.y = toward < 0 ? Math.PI : 0;
-      R.add(tag);
+      // Эмалированная табличка с номером над дверью.
+      plate(R, info.num, {
+        x: d.x, y: y + DOOR_H + 0.26, z: zIn + toward * 0.008,
+        face: toward > 0 ? "n" : "s", w: 0.24, h: 0.17,
+        bg: "#203048", fg: "#ece4c8", border: "#d8cfa8",
+      });
 
       const sceneKey = INTERACTIVE_APARTMENTS[info.num];
+      if (sceneKey && real) continue;   // квартира стоит за проёмом физически
 
-      if (sceneKey) {
-        // Обитаемая — проём ПУСТ, квартира стоит за ним физически.
-        // Игрок просто проходит, никаких кликов и телепортов.
-      } else {
-        // Необитаемая — запертая створка.
-        const leafW = DOOR_W - 0.12 - 0.02;
-        const leafH = DOOR_H - 0.06 - 0.03;
-        const leafT = 0.06;
-        const door = makeBox(R, leafW, leafH, leafT, d.x, y + 0.02 + leafH / 2, zc, COLORS.DOOR);
-        this.solids.push({
-          min: [d.x - DOOR_W / 2, y,          zc - WALL_T / 2],
-          max: [d.x + DOOR_W / 2, y + DOOR_H, zc + WALL_T / 2],
-        });
-        const pz = zc + toward * (leafT / 2 + 0.01);
-        makeBox(R, 0.66, 0.78, 0.02, d.x, y + 1.45, pz, 0x4a2f1e);
-        makeBox(R, 0.66, 0.55, 0.02, d.x, y + 0.60, pz, 0x4a2f1e);
-        makeBox(R, 0.04, 0.10, 0.07, d.x + 0.36, y + 1.0,
-            zc + toward * (leafT / 2 + 0.035), 0x8a8060);
+      const leafW = DOOR_W - 0.12 - 0.02;
+      const leafH = DOOR_H - 0.06 - 0.03;
+      const leafT = 0.06;
+      const door = makeBox(R, leafW, leafH, leafT, d.x, y + 0.02 + leafH / 2, zc, COLORS.DOOR);
+      this.solids.push({
+        min: [d.x - DOOR_W / 2, y,          zc - WALL_T / 2],
+        max: [d.x + DOOR_W / 2, y + DOOR_H, zc + WALL_T / 2],
+      });
+      const pz = zc + toward * (leafT / 2 + 0.01);
+      const p1 = makeBox(R, 0.66, 0.78, 0.02, d.x, y + 1.45, pz, 0x4a2f1e);
+      const p2 = makeBox(R, 0.66, 0.55, 0.02, d.x, y + 0.60, pz, 0x4a2f1e);
+      const knob = makeBox(R, 0.04, 0.10, 0.07, d.x + 0.36, y + 1.0,
+          zc + toward * (leafT / 2 + 0.035), 0x8a8060);
 
-        new Interactable(door, `Кв. ${info.num} (заперто)`, () => {
-          gm.audio.play("click");
-          gm.hud.showMessage(
-              `Дверь квартиры ${info.num} заперта. За ней — тишина.`,
-              3500);
-        });
-      }
+      const LINES = [
+        "Заперто. За дверью — тишина. Не темнота. Тишина.",
+        "Заперто. Я стучу. Никто не отвечает. Никто и не должен.",
+        "Заперто. Из-под двери тянет холодом, как из погреба.",
+        "Заперто. На коврике — пыль без следов.",
+      ];
+      new Interactable([door, p1, p2, knob], `Кв. ${info.num}`, () => {
+        gm.audio.play("locked");
+        const n = (+info.num) % LINES.length;
+        gm.hud.say(LINES[n]);
+      });
     }
   }
 
@@ -255,63 +258,52 @@ export class HallwayScene extends Scene {
   }
 
   _buildLight(R, y) {
-    const pt = new THREE.PointLight(0xffe8b4, 0.7, 14);
-    pt.position.set(-3.0, y + 2.4, 0);
-    R.add(pt);
-    const pt2 = new THREE.PointLight(0xffe8b4, 0.5, 10);
-    pt2.position.set(-6.5, y + 2.4, 0);
-    R.add(pt2);
+    // Плафоны под потолком площадки и над промежуточной площадкой.
+    for (const [lx, ly] of [[-3.4, y + FLOOR_H - 0.1], [X_MID + 0.6, y + MID_Y + FLOOR_H - 0.4]]) {
+      const lamp = glow(makeBox(R, 0.22, 0.12, 0.22, lx, ly - 0.06, 0, 0xe8dcb0), 0xf0dca0, 0.9);
+      this._lamps = this._lamps || [];
+      this._lamps.push(lamp);
+      this.light(lx, ly - 0.25, 0, { intensity: 5, distance: 9, group: "hall", flicker: 0.3 });
+    }
   }
 
   _buildFloorNumber(R, i, y) {
-    const num = (wrapIdx(i) + 2).toString();
-    const x = LANDING_X0;
-    makeBox(R, 0.04, 0.4, 0.5, x + 0.02, y + 2.1, 0, 0x2a2820);
-    const tag = makeTextSprite(num, { fontSize: 60, color: "#d8d0a0" });
-    tag.position.set(x + 0.05, y + 2.1, 0);
-    tag.rotation.y = Math.PI / 2;
-    R.add(tag);
+    const label = FLOOR_LABELS[wrapIdx(i)];
+    // Трафарет краской по стене — тот самый «5 ЭТАЖ».
+    decal(R, `${label} ЭТАЖ`, {
+      x: LANDING_X0 + 0.012, y: y + 1.9, z: -0.15, face: "e",
+      width: 0.9, style: "paint", px: 120,
+    });
   }
 
-  _buildInteractables(R) {
+  _buildFusebox(R) {
     const gm = this.game;
     const y = SPAWN_FLOOR * FLOOR_H;
+    const x = LANDING_X0 + 0.09, z = 0.75;
 
-    const box = makeBox(R, 0.15, 0.7, 0.5,
-        LANDING_X0 + 0.075, y + 1.4, 0.5, 0x3a3a38);
+    const box = makeBox(R, 0.16, 0.72, 0.52, x, y + 1.4, z, 0x4a4c48);
     this.solids.push(aabb(box));
+    const lid = makeBox(R, 0.02, 0.66, 0.46, x + 0.09, y + 1.4, z, 0x5a5c56);
+    const handle = makeBox(R, 0.03, 0.08, 0.03, x + 0.11, y + 1.4, z + 0.18, 0x8a8a80);
+    const lamp = glow(makeBox(R, 0.02, 0.04, 0.04, x + 0.1, y + 1.82, z - 0.15, 0x6a2a20), 0x000000, 0);
+    this._fuseLamp = lamp;
+    plate(R, "ЩИТ. ЭТ.5", { x: x + 0.101, y: y + 1.62, z, face: "e", w: 0.22, h: 0.07, bg: "#d8cfb0", fg: "#1a1a1a", border: "#1a1a1a" });
+    decal(R, "⚡", { x: x + 0.101, y: y + 1.25, z, face: "e", width: 0.12, style: "label", color: "rgba(200,40,30,0.95)" });
 
-    let fuseInserted = gm.flags.fuse_fixed === true;
+    new Interactable([box, lid, handle, lamp], () =>
+      gm.state.is("jumper_set") ? "Щиток" : gm.state.is("power_on") ? "Открыть щиток" : "Электрощит",
+      () => gm.puzzles.fusebox.open());
+  }
 
-    new Interactable(box,
-        gm.flags.fuse_fixed ? "Щиток (свет исправен)" : "Открыть электрощит",
-        () => {
-          if (gm.flags.fuse_fixed) {
-            gm.hud.showMessage("Щиток гудит ровно. Свет в порядке.");
-            return;
-          }
-          if (!gm.inventory.includes("Ключ от щитовой")) {
-            gm.audio.play("click");
-            gm.hud.showMessage(
-                "Щиток заперт на замок. Нужен ключ от щитовой —\n" +
-                "спроси в квартире №40.",
-                5000);
-            return;
-          }
-          gm.audio.play("click");
-          gm.hud.showMessage(NOTE_FUSEBOX, 6000);
-          if (!fuseInserted) {
-            fuseInserted = true;
-            setTimeout(() => {
-              gm.audio.play("glitch");
-              gm.flags.fuse_fixed = true;
-              gm.hud.showMessage(
-                  "Ты вставляешь синий предохранитель, затем поднимаешь\n" +
-                  "красный рубильник. Свет вспыхивает ровно.",
-                  6000);
-            }, 1200);
-          }
-        });
+  sync() {
+    const s = this.game.state;
+    const on = s.is("power_on");
+    this.game.lights.setGroupLevel("hall", on ? 1 : 0.1);
+    if (this._lamps) for (const l of this._lamps) l.material.emissiveIntensity = on ? 0.9 : 0.06;
+    if (this._fuseLamp) {
+      this._fuseLamp.material.emissive.setHex(on ? 0x40ff60 : 0x000000);
+      this._fuseLamp.material.emissiveIntensity = on ? 0.9 : 0;
+    }
   }
 
   onUpdate() {
@@ -320,25 +312,53 @@ export class HallwayScene extends Scene {
     const feetY = p.position.y - p.height;
     if (feetY > WRAP_TOP) this._wrap(-LOOP_H);
     else if (feetY < WRAP_BOTTOM) this._wrap(+LOOP_H);
+
+    if (gm.current === this) {
+      const label = FLOOR_LABELS[wrapIdx(Math.round(feetY / FLOOR_H))];
+      gm.hud.setLocation(`Подъезд · ${label} этаж`);
+    }
+
+    // Сообщение о витке — когда игрок действительно ступил на «пятый».
+    if (this._wrapPending && gm.current === this
+        && Math.abs(feetY - SPAWN_FLOOR * FLOOR_H) < 0.2 && p.position.x < -0.2) {
+      this._wrapPending = false;
+      this._announceLoop();
+    }
   }
 
   _wrap(dy) {
     const gm = this.game;
     gm.player.position.y += dy;
     gm.camera.position.y += dy;
-    gm.loopCount += 1;
-    const down = dy > 0;
-    const flag = down ? "loop_down_shown" : "loop_up_shown";
-    const text = gm.flags[flag]
-        ? `Виток ${gm.loopCount}.`
-        : down
-            ? "Ты спускаешься всё ниже, ступени не кончаются…\n" +
-            `И выходишь не на первый, а снова на пятый. Виток ${gm.loopCount}.`
-            : "Ты поднимаешься всё выше, а лестница всё не кончается…\n" +
-            `И выходишь не на шестой, а снова на второй. Виток ${gm.loopCount}.`;
-    gm.flags[flag] = true;
-    setTimeout(() => gm.hud.showMessage(text, 6000), 1800);
+    gm.audio.play("loopWhoosh");
+    if (dy > 0) {
+      // Спуск: виток засчитывается, когда игрок выйдет на пятый.
+      this._wrapPending = true;
+    } else {
+      gm.state.loop += 1;
+      gm.state.changed();
+      setTimeout(() => gm.hud.say("Выше пятого — второй. Лестница не кончается. Она замкнута."), 600);
+    }
   }
 
-  onEnter() { this.game.flags.been_hallway = true; }
+  _announceLoop() {
+    const gm = this.game;
+    gm.state.loop += 1;
+    gm.state.changed();
+    const first = !gm.state.is("looped");
+    gm.state.set("looped");
+    gm.state.learn("loop");
+    gm.audio.play("glitch");
+    if (first) {
+      gm.hud.sequence([
+        "Пятый этаж. Четвёртый. Третий. Второй. Я считаю ступени. Считаю площадки.",
+        "Я дохожу до первого этажа — и выхожу на пятый.",
+        "На стене — трафарет: «5 ЭТАЖ». Краска свежая. Первый виток рекурсии.",
+      ]);
+    } else {
+      gm.hud.say(`Снова пятый. Виток ${gm.state.loop}.`);
+    }
+  }
+
+  onEnter() { this.game.state.set("been_hallway"); }
 }

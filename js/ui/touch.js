@@ -39,12 +39,14 @@ export class TouchControls {
       </div>
       <div class="tc-btn tc-btn-e" id="tc-e">E</div>
       <div class="tc-btn tc-btn-esc" id="tc-esc">ESC</div>
+      <div class="tc-btn tc-btn-nb" id="tc-nb">ТЕТР.</div>
     `;
         document.body.appendChild(this.root);
         this.stick = this.root.querySelector("#tc-stick");
         this.knob  = this.root.querySelector("#tc-knob");
         this.eBtn  = this.root.querySelector("#tc-e");
         this.escBtn= this.root.querySelector("#tc-esc");
+        this.nbBtn = this.root.querySelector("#tc-nb");
         this.show();
     }
 
@@ -123,6 +125,7 @@ export class TouchControls {
         };
         wireKey(this.eBtn,   "KeyE");
         wireKey(this.escBtn, "Escape", "Escape");
+        wireKey(this.nbBtn,  "KeyJ");
 
         // ── Обзор: драг по канвасу ────────────────────────────────
         const canvas = this.game.canvas;
